@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Generator Pro</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Inter & Roboto Slab -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
+
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* A slightly cooler grey */
+        }
+
+        .gradient-text {
+            background-image: linear-gradient(to right, #434d5f, #2d3748);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .invoice-input {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        .invoice-input:focus {
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.4);
+            border-color: #4299e1; /* A professional blue */
+        }
+
+        #notification-toast {
+             transition: opacity 0.3s, transform 0.3s;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+
+    <div class="container mx-auto p-4 lg:p-8">
+        <!-- Header Section -->
+        <header class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-extrabold gradient-text">Professional Document Builder</h1>
+            <p class="text-slate-500 mt-3 text-base md:text-lg">Fill the form to generate your document.</p>
+        </header>
+
+        <!-- Main Content Area: Form -->
+        <div class="max-w-4xl mx-auto">
+            <main id="invoice-form" class="bg-white p-6 md:p-8 rounded-2xl shadow-lg">
+                 <!-- Invoice Type -->
+                <section class="mb-8">
+                    <h3 class="text-lg font-semibold text-slate-700 mb-2">Document Type</h3>
+                    <select id="invoice-type" class="w-full p-2.5 rounded-md invoice-input">
+                        <option value="SERVICE INVOICE">Service Invoice</option>
+                        <option value="PRODUCT INVOICE">Product Invoice</option>
+                        <option value="QUOTE">Quote</option>
+                        <option value="RECEIPT">Receipt</option>
+                    </select>
+                </section>
+                
+                <!-- Company and Client Details -->
+                <section class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-8">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-700 mb-2">From</h3>
+                        <input id="company-name" type="text" placeholder="Your Company Name" class="w-full p-2.5 rounded-md invoice-input">
+                        <textarea id="company-address" placeholder="Your Address..." class="w-full p-2.5 mt-2 rounded-md invoice-input" rows="2"></textarea>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-700 mb-2">Bill To</h3>
+                        <input id="client-name" type="text" placeholder="Client's Company Name" class="w-full p-2.5 rounded-md invoice-input">
+                        <textarea id="client-address" placeholder="Client's Address..." class="w-full p-2.5 mt-2 rounded-md invoice-input" rows="2"></textarea>
+                    </div>
+                </section>
+
+                <!-- Invoice Metadata -->
+                <section class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                    <div>
+                        <label for="invoice-number" class="block text-sm font-medium text-slate-500 mb-1">Number #</label>
+                        <input id="invoice-number" type="text" placeholder="001" class="w-full p-2.5 rounded-md invoice-input">
+                    </div>
+                    <div>
+                        <label for="invoice-date" class="block text-sm font-medium text-slate-500 mb-1">Date</label>
+                        <input id="invoice-date" type="date" class="w-full p-2.5 rounded-md invoice-input text-slate-500">
+                    </div>
+                    <div>
+                        <label for="due-date" class="block text-sm font-medium text-slate-500 mb-1">Due Date</label>
+                        <input id="due-date" type="date" class="w-full p-2.5 rounded-md invoice-input text-slate-500">
+                    </div>
+                </section>
+
+                <!-- Invoice Items Table -->
+                <section class="mb-8">
+                    <h3 class="text-lg font-semibold text-slate-700 mb-2">Items</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="border-b">
+                                <tr class="text-sm text-slate-600">
+                                    <th class="p-2 font-semibold w-1/2 text-left">Description</th>
+                                    <th class="p-2 font-semibold w-1/6 text-center">Qty</th>
+                                    <th class="p-2 font-semibold w-1/4 text-center">Price</th>
+                                    <th class="p-2"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoice-items"></tbody>
+                        </table>
+                    </div>
+                    <button id="add-item-btn" class="mt-4 text-blue-600 hover:text-blue-800 font-semibold flex items-center">
+                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        Add Item
+                    </button>
+                </section>
+                
+                 <!-- Totals Section -->
+                <section class="flex justify-end mb-8">
+                     <div class="w-full max-w-xs space-y-2">
+                            <div class="flex justify-between text-slate-600"><span>Subtotal</span><span id="subtotal">$0.00</span></div>
+                            <div class="flex justify-between items-center text-slate-600">
+                                <span>Tax (%)</span>
+                                <input id="tax-rate" type="number" value="10" class="w-20 p-1 text-right rounded-md invoice-input">
+                            </div>
+                            <hr class="border-slate-300">
+                            <div class="flex justify-between font-bold text-xl text-slate-800"><span class="">Total</span><span id="total-amount">$0.00</span></div>
+                        </div>
+                </section>
+
+                 <!-- Payment and Notes -->
+                <section class="grid grid-cols-1 md:grid-cols-2 gap-x-8">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-700 mb-2">Payment Type</h3>
+                        <textarea id="payment-type" placeholder="e.g., Bank Transfer, Credit Card, Net 30" class="w-full p-2.5 rounded-md invoice-input" rows="4"></textarea>
+                    </div>
+                     <div>
+                        <h3 class="text-lg font-semibold text-slate-700 mb-2">Notes</h3>
+                        <textarea id="notes" placeholder="Thank you for your business!" class="w-full p-2.5 rounded-md invoice-input" rows="4"></textarea>
+                    </div>
+                </section>
+
+                <!-- Submit Button -->
+                <section class="text-center mt-10">
+                    <button id="submit-btn" class="bg-blue-600 text-white font-bold py-3 px-10 rounded-lg text-lg hover:bg-blue-700 transition-colors">
+                        Submit for Processing
+                    </button>
+                </section>
+            </main>
+        </div>
+    </div>
+    
+    <div id="notification-toast" class="fixed top-5 right-5 bg-green-600 text-white py-3 px-6 rounded-lg shadow-lg opacity-0 transform -translate-y-2">
+        Document data sent to backend (check console).
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('invoice-form');
+        const addItemBtn = document.getElementById('add-item-btn');
+        const invoiceItemsContainer = document.getElementById('invoice-items');
+        const submitBtn = document.getElementById('submit-btn');
+
+        // --- Core Functions ---
+        const addNewItem = () => {
+            const itemRow = document.createElement('tr');
+            itemRow.classList.add('item-row');
+            itemRow.innerHTML = `
+                <td class="p-2"><input type="text" placeholder="Item description" class="description w-full p-2 rounded-md invoice-input"></td>
+                <td class="p-2"><input type="number" value="1" min="1" class="quantity w-full p-2 text-center rounded-md invoice-input"></td>
+                <td class="p-2"><input type="number" value="0.00" step="0.01" class="price w-full p-2 text-center rounded-md invoice-input"></td>
+                <td class="p-2 text-center">
+                    <button class="remove-item-btn text-slate-400 hover:text-red-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </td>
+            `;
+            invoiceItemsContainer.appendChild(itemRow);
+            updateTotals(); // Call updateTotals after adding
+        };
+
+        const updateTotals = () => {
+            let subtotal = 0;
+            document.querySelectorAll('.item-row').forEach(row => {
+                const qty = parseFloat(row.querySelector('.quantity').value) || 0;
+                const price = parseFloat(row.querySelector('.price').value) || 0;
+                subtotal += qty * price;
+            });
+
+            const taxRate = parseFloat(document.getElementById('tax-rate').value) || 0;
+            const taxAmount = subtotal * (taxRate / 100);
+            const totalAmount = subtotal + taxAmount;
+
+            document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+            document.getElementById('total-amount').textContent = `$${totalAmount.toFixed(2)}`;
+        };
+
+        // --- Event Listeners ---
+        form.addEventListener('input', (e) => {
+             // Update totals on any input change within the form
+            if(e.target.matches('.quantity, .price, #tax-rate')) {
+                updateTotals();
+            }
+        });
+        
+        addItemBtn.addEventListener('click', addNewItem);
+
+        invoiceItemsContainer.addEventListener('click', (e) => {
+            if (e.target.closest('.remove-item-btn')) {
+                e.target.closest('.item-row').remove();
+                updateTotals(); // Call updateTotals after removing
+            }
+        });
+
+        submitBtn.addEventListener('click', () => {
+            submitBtn.textContent = 'Processing...';
+            submitBtn.disabled = true;
+
+            const invoiceData = {
+                documentType: document.getElementById('invoice-type').value,
+                company: { name: document.getElementById('company-name').value, address: document.getElementById('company-address').value },
+                client: { name: document.getElementById('client-name').value, address: document.getElementById('client-address').value },
+                number: document.getElementById('invoice-number').value,
+                issueDate: document.getElementById('invoice-date').value,
+                dueDate: document.getElementById('due-date').value,
+                items: [],
+                paymentType: document.getElementById('payment-type').value,
+                notes: document.getElementById('notes').value,
+                taxRate: parseFloat(document.getElementById('tax-rate').value) || 0,
+                subtotal: 0,
+                total: 0,
+            };
+
+            let subtotal = 0;
+            document.querySelectorAll('.item-row').forEach(row => {
+                const description = row.querySelector('.description').value;
+                const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+                const price = parseFloat(row.querySelector('.price').value) || 0;
+                invoiceData.items.push({ description, quantity, price });
+                subtotal += quantity * price;
+            });
+
+            invoiceData.subtotal = subtotal;
+            invoiceData.total = subtotal * (1 + invoiceData.taxRate / 100);
+
+            console.log("--- Document Data for Backend ---");
+            console.log(JSON.stringify(invoiceData, null, 2));
+
+            const notification = document.getElementById('notification-toast');
+            notification.classList.remove('opacity-0', '-translate-y-2');
+            notification.classList.add('opacity-100', 'translate-y-0');
+
+            setTimeout(() => {
+                notification.classList.remove('opacity-100', 'translate-y-0');
+                notification.classList.add('opacity-0', '-translate-y-2');
+                submitBtn.textContent = 'Submit for Processing';
+                submitBtn.disabled = false;
+            }, 3000);
+        });
+
+        // --- Initial Setup ---
+        addNewItem();
+        document.getElementById('invoice-date').valueAsDate = new Date();
+        updateTotals();
+    });
+    </script>
+</body>
+</html>
