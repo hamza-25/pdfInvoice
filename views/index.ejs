@@ -156,9 +156,9 @@
     <div id="notification-toast" class="fixed top-5 right-5 bg-green-600 text-white py-3 px-6 rounded-lg shadow-lg opacity-0 transform -translate-y-2">
         Document data sent to backend (check console).
     </div>
-
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    <!-- <script src="../public/js/index.js"></script> -->
+     <script>
+            document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('invoice-form');
         const addItemBtn = document.getElementById('add-item-btn');
         const invoiceItemsContainer = document.getElementById('invoice-items');
@@ -259,13 +259,22 @@
                 submitBtn.textContent = 'Submit for Processing';
                 submitBtn.disabled = false;
             }, 3000);
+
+            const response = fetch('/invoice-generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(invoiceData)
+            });
         });
 
         // --- Initial Setup ---
         addNewItem();
         document.getElementById('invoice-date').valueAsDate = new Date();
         updateTotals();
-    });
-    </script>
+    });    
+
+    </script> 
 </body>
 </html>
