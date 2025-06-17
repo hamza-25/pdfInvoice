@@ -2,9 +2,8 @@ import express from 'express';
 import { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
-import { fileURLToPath } from 'url';
 dotenv.config();
-
+import invoiceRoutes from './routes/invoiceRoute';
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -18,11 +17,7 @@ app.use(express.json());
 app.get('/', (req: Request, res: Response) => {
   res.render('index');
 });
-
-app.post('/invoice-generate', (req: Request, res: Response) => {
-    console.log(req.body);
-    res.render('index');
-});
+app.use('/pdf', invoiceRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on ${DOMAIN}:${PORT}`);

@@ -94,6 +94,17 @@
                         <label for="due-date" class="block text-sm font-medium text-slate-500 mb-1">Due Date</label>
                         <input id="due-date" type="date" class="w-full p-2.5 rounded-md invoice-input text-slate-500">
                     </div>
+                    <div>
+                        <label for="invoice-currency" class="block text-sm font-medium text-slate-500 mb-1">Currency</label>
+                        <select name="" id="currency" class="w-full p-2.5 rounded-md invoice-input">
+                            <option value="$">USD</option>
+                            <option value="dh">MAD</option>
+                            <option value="€">EUR</option>
+                            <option value="¥">JPY</option>
+                            <option value="£">GBP</option>
+                        </select>
+                        <!-- <input id="currency" type="text" placeholder="dollar" class="w-full p-2.5 rounded-md invoice-input"> -->
+                    </div>
                 </section>
 
                 <!-- Invoice Items Table -->
@@ -121,10 +132,13 @@
                  <!-- Totals Section -->
                 <section class="flex justify-end mb-8">
                      <div class="w-full max-w-xs space-y-2">
-                            <div class="flex justify-between text-slate-600"><span>Subtotal</span><span id="subtotal">$0.00</span></div>
+                            <div class="flex justify-between text-slate-600">
+                                <span>Subtotal</span>
+                                <span id="subtotal">$0.00</span>
+                            </div>
                             <div class="flex justify-between items-center text-slate-600">
                                 <span>Tax (%)</span>
-                                <input id="tax-rate" type="number" value="10" class="w-20 p-1 text-right rounded-md invoice-input">
+                                <input id="tax-rate" type="number" value="0" min="0" max="100" class="w-20 p-1 text-right rounded-md invoice-input">
                             </div>
                             <hr class="border-slate-300">
                             <div class="flex justify-between font-bold text-xl text-slate-800"><span class="">Total</span><span id="total-amount">$0.00</span></div>
@@ -158,11 +172,35 @@
     </div>
     <!-- <script src="../public/js/index.js"></script> -->
      <script>
-            document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('invoice-form');
         const addItemBtn = document.getElementById('add-item-btn');
         const invoiceItemsContainer = document.getElementById('invoice-items');
         const submitBtn = document.getElementById('submit-btn');
+        const selectTags = document.getElementById('currency');
+
+
+
+        selectTags.addEventListener('change', (e) => {
+            const selectedCurrency = e.target.value;
+
+            const subtotalTag = document.getElementById('subtotal');
+            const subtotalValue = subtotalTag.textContent;
+            const totalAmountTag = document.getElementById('total-amount');
+            const totalAmountValue = subtotalTag.textContent;
+            console.log(`Subtotal value before change: ${subtotalValue}`);
+
+            if (subtotalValue[0] == 'd' && subtotalValue[1] == 'h') {
+                 subtotalTag.innerText = selectedCurrency + '' + subtotalValue.slice(2);
+                 totalAmountTag.innerText = selectedCurrency + '' + totalAmountValue.slice(2);
+            } else {
+                subtotalTag.innerText = selectedCurrency + ' ' + subtotalValue.slice(1);
+                totalAmountTag.innerText = selectedCurrency + ' ' + totalAmountValue.slice(1);
+            }
+
+          // document.getElementById('subtotal').innerText = selectedCurrency;
+            //console.log(`Currency changed to: ${selectedCurrency}`);
+        });
 
         // --- Core Functions ---
         const addNewItem = () => {
@@ -194,8 +232,8 @@
             const taxAmount = subtotal * (taxRate / 100);
             const totalAmount = subtotal + taxAmount;
 
-            document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
-            document.getElementById('total-amount').textContent = `$${totalAmount.toFixed(2)}`;
+            document.getElementById('subtotal').textContent = `${selectTags.value}${subtotal.toFixed(2)}`;
+            document.getElementById('total-amount').textContent = `${selectTags.value}${totalAmount.toFixed(2)}`;
         };
 
         // --- Event Listeners ---
@@ -207,6 +245,8 @@
         });
         
         addItemBtn.addEventListener('click', addNewItem);
+
+
 
         invoiceItemsContainer.addEventListener('click', (e) => {
             if (e.target.closest('.remove-item-btn')) {
@@ -232,6 +272,7 @@
                 taxRate: parseFloat(document.getElementById('tax-rate').value) || 0,
                 subtotal: 0,
                 total: 0,
+                currency: document.getElementById('currency').value || 'USD',
             };
 
             let subtotal = 0;
@@ -260,7 +301,7 @@
                 submitBtn.disabled = false;
             }, 3000);
 
-            const response = fetch('/invoice-generate', {
+            const response = fetch('/pdf/invoice-generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
