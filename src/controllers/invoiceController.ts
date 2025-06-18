@@ -124,7 +124,7 @@ export const invoiceGenerate = async (req: Request, res: Response) => {
 //       { align: 'center' }
 //     );
 // step 2
-// console.log(req.body);
+console.log(req.body);
 const data = req.body;
 const doc = new PDFDocument({ margin: 50 });
 
@@ -140,17 +140,17 @@ const doc = new PDFDocument({ margin: 50 });
   // Company Info
   doc
     .fontSize(10)
-    .text('[Company Name]', 50, 50)
-    .text('[Street Address]', 50, 65)
-    .text('[City, ST ZIP]', 50, 80)
-    .text('Phone: (000) 000-0000', 50, 95);
+    .text(data.company.name, 50, 50)
+    .text(data.company.address, 50, 65)
+    .text(data.company.city || '', 50, 80)
+    .text(data.company.phone || '', 50, 95);
 
   // Invoice Info
   doc
     .text('INVOICE #:', 400, 100)
-    .text('[123456]', 470, 100)
+    .text(data.number, 470, 100)
     .text('DATE:', 400, 115)
-    .text('5/1/2014', 470, 115);
+    .text(data.issueData, 470, 115);
 
   // Bill To Box
   doc
@@ -162,12 +162,12 @@ const doc = new PDFDocument({ margin: 50 });
 
   doc
     .fillColor('black')
-    .text('[Name]', 55, 165)
-    .text('[CompanyName]', 55, 180)
-    .text('[Street Address]', 55, 195)
-    .text('[City, ST ZIP]', 55, 210)
-    .text('[Phone]', 55, 225)
-    .text('[Email Address]', 55, 240);
+    .text(data.client.name, 55, 165)
+    .text(data.client.company || '', 55, 180)
+    .text(data.client.address || '', 55, 195)
+    .text(data.company.city || '', 55, 210)
+    .text(data.company.phone || '', 55, 225)
+    .text(data.company.email || '', 55, 240);
 
   // Table Headers
   doc
@@ -177,6 +177,7 @@ const doc = new PDFDocument({ margin: 50 });
 
   doc
     .text('DESCRIPTION', 55, 275)
+    .text('Quantity', 350, 275)
     .text('AMOUNT', 450, 275);
 
   doc
@@ -185,10 +186,25 @@ const doc = new PDFDocument({ margin: 50 });
     .stroke();
 
   // Table Content
-  doc.text('Service Fee', 55, 305).text('200.00', 450, 305);
-  doc.text('Labor: 5 hours at $75/hr', 55, 320).text('375.00', 450, 320);
-  doc.text('New client discount', 55, 335).text('(60.00)', 450, 335);
-  doc.text('Tax (4.25% after discount)', 55, 350).text('36.56', 450, 350);
+  // doc.text('Service Fee', 55, 305).text('200.00', 450, 305);
+  // doc.text('Labor: 5 hours at $75/hr', 55, 320).text('375.00', 450, 320);
+  // doc.text('New client discount', 55, 335).text('(60.00)', 450, 335);
+  interface elementType {
+    description: string;
+    price: string;
+    quantity: string;
+  }
+  let rowHeight = 305;
+  let total = 0;
+  data.items.forEach((element: elementType) => {
+    doc.text(element.description, 55, rowHeight).text(element.quantity, 350, rowHeight).text(element.price, 450, rowHeight);
+    rowHeight += 15;
+    total += parseFloat(element.price);
+  });
+
+  // Tax
+  const taxValue = (data.taxRate * total) / 100;
+  doc.text(`Tax (${data.taxRate}%)`, 55, 350).text(`${taxValue}`, 450, 350);
 
   // Total
   doc
@@ -196,7 +212,7 @@ const doc = new PDFDocument({ margin: 50 });
     .lineTo(550, 380)
     .stroke();
 
-  doc.font('Helvetica-Bold').text('TOTAL', 400, 390).text('551.56', 450, 390);
+  doc.font('Helvetica-Bold').text('TOTAL', 400, 390).text(`${total + taxValue}`, 450, 390);
 
   // Footer
   doc
