@@ -301,12 +301,27 @@
                 submitBtn.disabled = false;
             }, 3000);
 
-            const response = fetch('/pdf/invoice-generate', {
+            // const response = fetch('/pdf/invoice-generate', {
+           //const response = fetch('/download-pdf', {
+           //    method: 'GET',
+           //    headers: {
+           //        'Content-Type': 'application/json'
+           //    },
+           //    body: JSON.stringify(invoiceData)
+           //});
+           fetch('/pdf/invoice-generate', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(invoiceData)
+            })
+            .then(res => res.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'invoice.pdf';
+                a.click();
+                window.URL.revokeObjectURL(url);
             });
         });
 
