@@ -23,7 +23,7 @@ export interface invoiceData {
   documentType: string;
   company: companyData;
   client: clientData;
-  number: string;
+  number?: string;
   issueDate: string;
   dueDate?: string;
   items: invoiceItem[];

@@ -88,10 +88,10 @@
 
                 <!-- Invoice Metadata -->
                 <section class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-                    <div>
+                    <!-- <div>
                         <label for="invoice-number" class="block text-sm font-medium text-slate-500 mb-1">Number #</label>
                         <input id="invoice-number" type="text" placeholder="001" class="w-full p-2.5 rounded-md invoice-input">
-                    </div>
+                    </div> -->
                     <div>
                         <label for="invoice-date" class="block text-sm font-medium text-slate-500 mb-1">Date</label>
                         <input id="invoice-date" type="date" class="w-full p-2.5 rounded-md invoice-input text-slate-500">
@@ -174,8 +174,12 @@
     </div>
     
     <div id="notification-toast" class="fixed top-5 right-5 bg-green-600 text-white py-3 px-6 rounded-lg shadow-lg opacity-0 transform -translate-y-2">
-        Document data sent to backend (check console).
+        data sent
     </div>
+     <div id="notification-toast-error" class="fixed top-5 left-5 bg-red-600 text-white py-3 px-6 rounded-lg shadow-lg opacity-0 transform -translate-y-2">
+        Something went wrong,<br>please try again.
+    </div>
+
     <!-- <script src="../public/js/index.js"></script> -->
      <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -271,7 +275,7 @@
                 phone: document.getElementById('company-phone').value, city: document.getElementById('company-city').value, email: document.getElementById('company-email').value},
                 client: { name: document.getElementById('client-name').value, address: document.getElementById('client-address').value, 
                 phone: document.getElementById('client-phone').value, city: document.getElementById('client-city').value, email: document.getElementById('client-email').value},
-                number: document.getElementById('invoice-number').value,
+                // number: document.getElementById('invoice-number').value,
                 issueDate: document.getElementById('invoice-date').value,
                 dueDate: document.getElementById('due-date').value,
                 items: [],
@@ -314,7 +318,22 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(invoiceData)
             })
-            .then(res => res.blob())
+            .then(res => {
+                if (!res.ok) {
+                    console.log(res);
+                    //window.alert('Failed to generate invoice. Please try again.');
+                const notificationError = document.getElementById('notification-toast-error');
+                notificationError.classList.remove('opacity-0', '-translate-y-2');
+                notificationError.classList.add('opacity-100', 'translate-y-0');
+                setTimeout(() => { 
+                    notificationError.classList.remove('opacity-100', 'translate-y-0');
+                    notificationError.classList.add('opacity-0', '-translate-y-2');
+                }, 3000);
+                   
+                    throw new Error('Network response was not ok');
+                }
+                return res.blob()
+            })
             .then(blob => {
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
