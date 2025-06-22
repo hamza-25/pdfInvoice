@@ -72,11 +72,17 @@
                         <h3 class="text-lg font-semibold text-slate-700 mb-2">From</h3>
                         <input id="company-name" type="text" placeholder="Your Company Name" class="w-full p-2.5 rounded-md invoice-input">
                         <textarea id="company-address" placeholder="Your Address..." class="w-full p-2.5 mt-2 rounded-md invoice-input" rows="2"></textarea>
+                        <input id="company-phone" type="text" placeholder="Your Company phone" class="w-full p-2.5 rounded-md invoice-input">
+                        <input id="company-city" type="text" placeholder="Your company city" class="w-full p-2.5 rounded-md invoice-input">
+                        <input id="company-email" type="text" placeholder="Your company email" class="w-full p-2.5 rounded-md invoice-input">
                     </div>
                     <div>
                         <h3 class="text-lg font-semibold text-slate-700 mb-2">Bill To</h3>
                         <input id="client-name" type="text" placeholder="Client's Company Name" class="w-full p-2.5 rounded-md invoice-input">
                         <textarea id="client-address" placeholder="Client's Address..." class="w-full p-2.5 mt-2 rounded-md invoice-input" rows="2"></textarea>
+                        <input id="client-phone" type="text" placeholder="Your client phone" class="w-full p-2.5 rounded-md invoice-input">
+                        <input id="client-city" type="text" placeholder="Your client city" class="w-full p-2.5 rounded-md invoice-input">
+                        <input id="client-email" type="text" placeholder="Your client email" class="w-full p-2.5 rounded-md invoice-input">
                     </div>
                 </section>
 
@@ -261,8 +267,10 @@
 
             const invoiceData = {
                 documentType: document.getElementById('invoice-type').value,
-                company: { name: document.getElementById('company-name').value, address: document.getElementById('company-address').value },
-                client: { name: document.getElementById('client-name').value, address: document.getElementById('client-address').value },
+                company: { name: document.getElementById('company-name').value, address: document.getElementById('company-address').value,
+                phone: document.getElementById('company-phone').value, city: document.getElementById('company-city').value, email: document.getElementById('company-email').value},
+                client: { name: document.getElementById('client-name').value, address: document.getElementById('client-address').value, 
+                phone: document.getElementById('client-phone').value, city: document.getElementById('client-city').value, email: document.getElementById('client-email').value},
                 number: document.getElementById('invoice-number').value,
                 issueDate: document.getElementById('invoice-date').value,
                 dueDate: document.getElementById('due-date').value,
@@ -301,14 +309,6 @@
                 submitBtn.disabled = false;
             }, 3000);
 
-            // const response = fetch('/pdf/invoice-generate', {
-           //const response = fetch('/download-pdf', {
-           //    method: 'GET',
-           //    headers: {
-           //        'Content-Type': 'application/json'
-           //    },
-           //    body: JSON.stringify(invoiceData)
-           //});
            fetch('/pdf/invoice-generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
