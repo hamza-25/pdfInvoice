@@ -341,6 +341,19 @@
                 a.download = 'invoice.pdf';
                 a.click();
                 window.URL.revokeObjectURL(url);
+                document.getElementById('invoice-type').value = '';
+                document.getElementById('company-name').value = '';
+                document.getElementById('company-address').value = '';
+                document.getElementById('company-city').value = '';
+                document.getElementById('company-phone').value = '';
+                document.getElementById('company-email').value = '';
+                document.getElementById('client-name').value = '';
+                document.getElementById('client-address').value = '';
+                document.getElementById('client-city').value = '';
+                document.getElementById('client-phone').value = '';
+                document.getElementById('client-email').value = '';
+                document.getElementById('payment-type').value = '';
+                document.getElementById('notes').value = '';
             });
         });
 
