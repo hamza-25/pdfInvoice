@@ -84,24 +84,27 @@ export const invoiceGenerate = async (req: Request, res: Response) => {
     
       // Tax
       const taxValue = (data.taxRate * total) / 100;
-      doc.text(`Tax (${data.taxRate}%)`, 55, 350).text(`${taxValue.toFixed(2)}`, 450, 350);
+      doc.text(`Tax (${data.taxRate}%)`, 55, rowHeight/*350*/).text(`${taxValue.toFixed(2)}`, 450, rowHeight/*350*/);
     
       // Total
+      rowHeight += 15; // Move to the next row for total
       doc
-        .moveTo(50, 380)
-        .lineTo(550, 380)
+        .moveTo(50, /*380*/rowHeight)
+        .lineTo(550, /*380*/rowHeight)
         .stroke();
-    
-      doc.font('Helvetica-Bold').text('TOTAL', 400, 390).text(`${total + taxValue}`, 450, 390);
+      
+      rowHeight += 15;
+      doc.font('Helvetica-Bold').text('TOTAL', 400, rowHeight).text(`${total + taxValue}`, 450, rowHeight);
     
       // Footer
+      rowHeight += 15;
       doc
         .font('Helvetica')
-        .text('Thank you for your business!', 50, 420)
+        .text('Thank you for your business!', 50, /*420*/rowHeight)
         .fontSize(8)
-        .text('If you have any questions about this invoice, please contact Us', 50, 460)
+        .text('If you have any questions about this invoice, please contact Us', 50, rowHeight + 40)
         //.text('[Name, Phone, email@address.com]', 50, 470)
-        .text(`[${data.company.name}, ${data.company.phone}, ${data.company.email}]`, 50, 470);
+        .text(`[${data.company.name}, ${data.company.phone}, ${data.company.email}]`, 50, rowHeight + 50);
     
       doc.end();
   } catch (error) {
