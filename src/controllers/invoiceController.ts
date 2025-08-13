@@ -329,18 +329,20 @@ export const invoiceGenerate = async (req: Request, res: Response) => {
         .moveTo(50, 290)
         .lineTo(550, 290)
         .stroke();
-
+console.log('data.items', data);
       let rowHeight = 305;
       let total = 0;
       data.items.forEach((element: invoiceItem) => {
-        doc.text(element.description, 55, rowHeight).text(element.quantity, 350, rowHeight).text(element.price, 450, rowHeight);
+        doc.text(element.description, 55, rowHeight).text(element.quantity, 350, rowHeight).text(`${element.price}${data.currency}`, 450, rowHeight);
+        console.log('element.price', element.price, 'element.quantity', element.quantity);
         rowHeight += 15;
-        total += parseFloat(element.price);
+        const totalProductPrice = parseFloat(element.price) * parseFloat(element.quantity);
+        total += totalProductPrice;
       });
     
       // Tax
       const taxValue = (data.taxRate * total) / 100;
-      doc.text(`Tax (${data.taxRate}%)`, 55, rowHeight /*350*/).text(`${taxValue.toFixed(2)}`, 450, rowHeight /*350*/);
+      doc.text(`Tax (${data.taxRate}%)`, 55, rowHeight /*350*/).text(`${taxValue.toFixed(2)}${data.currency}`, 450, rowHeight /*350*/);
     
       // Total
       rowHeight += 15; // Move to the next row for total
@@ -350,7 +352,7 @@ export const invoiceGenerate = async (req: Request, res: Response) => {
         .stroke();
       
       rowHeight += 15;
-      doc.font('Helvetica-Bold').text('TOTAL', 400, rowHeight).text(`${total + taxValue}`, 450, rowHeight);
+      doc.font('Helvetica-Bold').text('TOTAL', 400, rowHeight).text(`${total + taxValue}${data.currency}`, 450, rowHeight);
     
       // Footer
       rowHeight += 15;
