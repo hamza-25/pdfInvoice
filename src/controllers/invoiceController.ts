@@ -77,7 +77,7 @@ export const invoiceGenerate = async (req: Request, res: Response) => {
       let rowHeight = 305;
       let total = 0;
       data.items.forEach((element: invoiceItem) => {
-        doc.text(element.description, 55, rowHeight).text(element.quantity, 350, rowHeight).text(element.price, 450, rowHeight);
+        doc.text(element.description, 55, rowHeight).text(element.quantity, 350, rowHeight).text(`${element.price}${data.currency}`, 450, rowHeight);
         rowHeight += 15;
         total += parseFloat(element.price);
       });
@@ -94,7 +94,7 @@ export const invoiceGenerate = async (req: Request, res: Response) => {
         .stroke();
       
       rowHeight += 15;
-      doc.font('Helvetica-Bold').text('TOTAL', 400, rowHeight).text(`${total + taxValue}`, 450, rowHeight);
+      doc.font('Helvetica-Bold').text('TOTAL', 400, rowHeight).text(`${total + taxValue}${data.currency}`, 450, rowHeight);
     
       // Footer
       rowHeight += 15;
