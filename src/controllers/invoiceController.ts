@@ -213,7 +213,7 @@ export const invoiceGenerate = async (req: Request, res: Response) => {
 
 
     // Tax
-    let rowHeightAfterItems = rowHeight; // dynamic position after items
+    let rowHeightAfterItems = 530; 
     const taxValue = (data.taxRate * total) / 100;
     doc
       .text(`Tax (${data.taxRate}%)`, 55, rowHeightAfterItems)
