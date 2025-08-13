@@ -88,7 +88,7 @@ const invoiceGenerate = (req, res) => __awaiter(void 0, void 0, void 0, function
         });
         // Tax
         const taxValue = (data.taxRate * total) / 100;
-        doc.text(`Tax (${data.taxRate}%)`, 55, rowHeight + 15 /*350*/).text(`${taxValue.toFixed(2)}`, 450, rowHeight + 15 /*350*/);
+        doc.text(`Tax (${data.taxRate}%)`, 55, rowHeight /*350*/).text(`${taxValue.toFixed(2)}`, 450, rowHeight /*350*/);
         // Total
         rowHeight += 15; // Move to the next row for total
         doc
