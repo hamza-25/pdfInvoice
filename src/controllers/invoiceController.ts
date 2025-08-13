@@ -185,16 +185,32 @@ export const invoiceGenerate = async (req: Request, res: Response) => {
     let total = 0;
     let itemsLimit = 1;
 
+    // for (const element of data.items) {
+    //   if (itemsLimit > 15) break; // stop at max 15 items
+    //   doc
+    //     .text(element.description, 55, rowHeight)
+    //     .text(element.quantity, 350, rowHeight)
+    //     .text(`${element.price}${data.currency}`, 450, rowHeight);
+    //   rowHeight += 15;
+    //   total += parseFloat(element.price);
+    //   itemsLimit += 1;
+    // }
     for (const element of data.items) {
-      if (itemsLimit > 15) break; // stop at max 15 items
-      doc
-        .text(element.description, 55, rowHeight)
-        .text(element.quantity, 350, rowHeight)
-        .text(`${element.price}${data.currency}`, 450, rowHeight);
-      rowHeight += 15;
-      total += parseFloat(element.price);
-      itemsLimit += 1;
-    }
+  if (itemsLimit > 15) break;
+
+  const descriptionWidth = 280; // space for description column
+  const descHeight = doc.heightOfString(element.description, { width: descriptionWidth });
+  const lineHeight = Math.max(descHeight, 15); // at least one line tall
+
+  doc.text(element.description, 55, rowHeight, { width: descriptionWidth })
+     .text(element.quantity, 350, rowHeight)
+     .text(`${element.price}${data.currency}`, 450, rowHeight);
+
+  rowHeight += lineHeight + 5; // +5 for spacing
+  total += parseFloat(element.price);
+  itemsLimit += 1;
+}
+
 
     // Tax
     let rowHeightAfterItems = rowHeight; // dynamic position after items
