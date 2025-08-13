@@ -217,9 +217,9 @@
             const itemRow = document.createElement('tr');
             itemRow.classList.add('item-row');
             itemRow.innerHTML = `
-                <td class="p-2"><input type="text" placeholder="Item description" class="description w-full p-2 rounded-md invoice-input"></td>
+                <td class="p-2"><input type="text" placeholder="Item description" maxlength="54" class="description w-full p-2 rounded-md invoice-input"></td>
                 <td class="p-2"><input type="number" value="1" min="1" class="quantity w-full p-2 text-center rounded-md invoice-input"></td>
-                <td class="p-2"><input type="number" value="0.00" step="0.01" class="price w-full p-2 text-center rounded-md invoice-input"></td>
+                <td class="p-2"><input type="number" value="0.00" min="0" step="0.01" class="price w-full p-2 text-center rounded-md invoice-input"></td>
                 <td class="p-2 text-center">
                     <button class="remove-item-btn text-slate-400 hover:text-red-500 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>

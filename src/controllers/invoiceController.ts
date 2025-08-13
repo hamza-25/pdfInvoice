@@ -329,12 +329,10 @@ export const invoiceGenerate = async (req: Request, res: Response) => {
         .moveTo(50, 290)
         .lineTo(550, 290)
         .stroke();
-console.log('data.items', data);
       let rowHeight = 305;
       let total = 0;
       data.items.forEach((element: invoiceItem) => {
         doc.text(element.description, 55, rowHeight).text(element.quantity, 350, rowHeight).text(`${element.price}${data.currency}`, 450, rowHeight);
-        console.log('element.price', element.price, 'element.quantity', element.quantity);
         rowHeight += 15;
         const totalProductPrice = parseFloat(element.price) * parseFloat(element.quantity);
         total += totalProductPrice;
