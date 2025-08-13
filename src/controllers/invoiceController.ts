@@ -76,11 +76,24 @@ export const invoiceGenerate = async (req: Request, res: Response) => {
 
       let rowHeight = 305;
       let total = 0;
-      data.items.forEach((element: invoiceItem) => {
-        doc.text(element.description, 55, rowHeight).text(element.quantity, 350, rowHeight).text(`${element.price}${data.currency}`, 450, rowHeight);
-        rowHeight += 15;
-        total += parseFloat(element.price);
-      });
+      // data.items.forEach((element: invoiceItem) => {
+      //   doc.text(element.description, 55, rowHeight).text(element.quantity, 350, rowHeight).text(`${element.price}${data.currency}`, 450, rowHeight);
+      //   rowHeight += 15;
+      //   total += parseFloat(element.price);
+      // });
+
+      await (async () => {
+        for (const element of data.items) {
+          await new Promise<void>((resolve) => {
+            doc.text(element.description, 55, rowHeight)
+               .text(element.quantity, 350, rowHeight)
+               .text(`${element.price}${data.currency}`, 450, rowHeight);
+            rowHeight += 15;
+            total += parseFloat(element.price);
+            resolve();
+          });
+        }
+      })();
     
       // Tax
       const taxValue = (data.taxRate * total) / 100;
