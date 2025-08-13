@@ -10,10 +10,7 @@ export const invoiceGenerate = async (req: Request, res: Response) => {
   try {
       const errors = validationResult(req);
       if(!errors.isEmpty()) {
-        return res.status(400).render('index', {
-    errors: errors.array(), 
-    old: req.body            
-  });
+        return res.status(400).render('index', { errors: errors.array(), old: req.body});
       }
       const data: invoiceData = req.body;
       data.number = uuidv4().split('-')[0];
@@ -82,18 +79,33 @@ export const invoiceGenerate = async (req: Request, res: Response) => {
       //   total += parseFloat(element.price);
       // });
 
+      // await (async () => {
+      //   for (const element of data.items) {
+      //     await new Promise<void>((resolve) => {
+      //       doc.text(element.description, 55, rowHeight)
+      //          .text(element.quantity, 350, rowHeight)
+      //          .text(`${element.price}${data.currency}`, 450, rowHeight);
+      //       rowHeight += 15;
+      //       total += parseFloat(element.price);
+      //       resolve();
+      //     });
+      //   }
+      // })();
+
       await (async () => {
         for (const element of data.items) {
-          await new Promise<void>((resolve) => {
-            doc.text(element.description, 55, rowHeight)
-               .text(element.quantity, 350, rowHeight)
-               .text(`${element.price}${data.currency}`, 450, rowHeight);
-            rowHeight += 15;
-            total += parseFloat(element.price);
-            resolve();
-          });
+          doc.text(element.description, 55, rowHeight)
+             .text(element.quantity, 350, rowHeight)
+             .text(`${element.price}${data.currency}`, 450, rowHeight);
+        
+          rowHeight += 15;
+          total += parseFloat(element.price);
+        
+          // Give pdfkit time to flush drawing commands
+          await new Promise((r) => setImmediate(r));
         }
       })();
+
     
       // Tax
       const taxValue = (data.taxRate * total) / 100;
