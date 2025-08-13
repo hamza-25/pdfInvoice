@@ -120,6 +120,8 @@ import PDFDocument from 'pdfkit';
 import { invoiceData, invoiceItem } from '../interfaces';
 import { v4 as uuidv4 } from 'uuid';
 import { validationResult } from 'express-validator';
+import fs from 'fs';
+import path from 'path';
 
 export const invoiceGenerate = async (req: Request, res: Response) => {
   try {
@@ -133,17 +135,18 @@ export const invoiceGenerate = async (req: Request, res: Response) => {
 
     const doc = new PDFDocument({ margin: 50 });
 
-    // Collect PDF chunks in memory
-    const buffers: Buffer[] = [];
-    doc.on('data', buffers.push.bind(buffers));
-    doc.on('end', () => {
-      const pdfBuffer = Buffer.concat(buffers);
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename=static-invoice.pdf');
-      res.send(pdfBuffer);
-    });
-
     // -------------------------
+    // Create directory for invoices if it doesn't exist
+    const invoicesDir = path.join(process.cwd(), `./${process.env.INVOICE_DIR_NAME}/invoices`);
+    // if (!fs.existsSync(invoicesDir)) {
+    //   fs.mkdirSync(invoicesDir, { recursive: true });
+    // }
+    // const invoicesDir = '/home/hamza/pdfInvoice/src/invoices/invoicesDir';
+
+    const filePath = path.join(invoicesDir, `invoice-${data.number}.pdf`);
+    const writeStream = fs.createWriteStream(filePath);
+    doc.pipe(writeStream);
+
     // Header
     doc.fontSize(20).text('INVOICE', 450, 50);
 
@@ -181,6 +184,7 @@ export const invoiceGenerate = async (req: Request, res: Response) => {
     let rowHeight = 305;
     let total = 0;
     let itemsLimit = 1;
+
     for (const element of data.items) {
       if (itemsLimit > 15) break; // stop at max 15 items
       doc
@@ -193,7 +197,7 @@ export const invoiceGenerate = async (req: Request, res: Response) => {
     }
 
     // Tax
-    let rowHeightAfterItems = rowHeight; // use last rowHeight dynamically
+    let rowHeightAfterItems = rowHeight; // dynamic position after items
     const taxValue = (data.taxRate * total) / 100;
     doc
       .text(`Tax (${data.taxRate}%)`, 55, rowHeightAfterItems)
@@ -219,6 +223,15 @@ export const invoiceGenerate = async (req: Request, res: Response) => {
       .text(`[${data.company.name}, ${data.company.phone}, ${data.company.email}]`, 50, rowHeightAfterItems + 50);
 
     doc.end(); // finalize PDF
+
+    // Wait until PDF is fully written, then send it
+    writeStream.on('finish', () => {
+      res.download(filePath, `invoice-${data.number}.pdf`, (err) => {
+        if (err) console.error('Error sending invoice:', err);
+        // Optional: delete file after sending
+        fs.unlink(filePath, () => {});
+      });
+    });
 
   } catch (error) {
     console.error('Error generating invoice:', error);
