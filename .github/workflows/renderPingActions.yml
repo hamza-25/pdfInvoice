@@ -1,0 +1,15 @@
+# Simulated daily request to your render project so that the service doesn't go down
+name: Render ping every 14 minutes
+
+on:
+  schedule:
+    - cron: '*/14 * * * *'  # Runs every 14 minutes (UTC)
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  curl-website:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run cURL on Website
+        run: curl -I https://pdf.hamzaichaoui.dev/
