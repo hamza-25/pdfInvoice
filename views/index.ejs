@@ -124,10 +124,13 @@
                             <tbody id="invoice-items"></tbody>
                         </table>
                     </div>
-                    <button id="add-item-btn" class="mt-4 text-blue-600 hover:text-blue-800 font-semibold flex items-center">
-                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                        Add Item
-                    </button>
+                    <div class="mt-4 flex items-center gap-3">
+                        <button type="button" id="add-item-btn" class="text-blue-600 hover:text-blue-800 font-semibold flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                            Add Item
+                        </button>
+                        <span id="items-limit-hint" class="hidden text-sm text-amber-600">Maximum of 15 items reached.</span>
+                    </div>
                 </section>
                 
                  <!-- Totals Section -->
@@ -198,7 +201,17 @@
         selectTags.addEventListener('change', renderTotals);
 
         // --- Core Functions ---
+        const MAX_ITEMS = 15;
+
+        const updateAddItemState = () => {
+            const atLimit = document.querySelectorAll('.item-row').length >= MAX_ITEMS;
+            addItemBtn.disabled = atLimit;
+            addItemBtn.classList.toggle('opacity-50', atLimit);
+            document.getElementById('items-limit-hint').classList.toggle('hidden', !atLimit);
+        };
+
         const addNewItem = () => {
+            if (document.querySelectorAll('.item-row').length >= MAX_ITEMS) return;
             const itemRow = document.createElement('tr');
             itemRow.classList.add('item-row');
             itemRow.innerHTML = `
@@ -206,13 +219,14 @@
                 <td class="p-2"><input type="number" value="1" min="1" class="quantity w-full p-2 text-center rounded-md invoice-input"></td>
                 <td class="p-2"><input type="number" value="0.00" min="0" step="0.01" class="price w-full p-2 text-center rounded-md invoice-input"></td>
                 <td class="p-2 text-center">
-                    <button class="remove-item-btn text-slate-400 hover:text-red-500 transition-colors">
+                    <button type="button" class="remove-item-btn text-slate-400 hover:text-red-500 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                 </td>
             `;
             invoiceItemsContainer.appendChild(itemRow);
             updateTotals(); // Call updateTotals after adding
+            updateAddItemState();
         };
 
         const updateTotals = () => {
@@ -248,6 +262,7 @@
             if (e.target.closest('.remove-item-btn')) {
                 e.target.closest('.item-row').remove();
                 updateTotals(); // Call updateTotals after removing
+                updateAddItemState();
             }
         });
 

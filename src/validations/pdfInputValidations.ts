@@ -21,7 +21,7 @@ export const pdfInputValidations = [
 
   body('dueDate').optional().trim().escape(),
 
-  body('items').isArray().withMessage('Items must be an array'),
+  body('items').isArray({ max: 15 }).withMessage('Items must be an array with at most 15 entries'),
 
   body('items.*.description').trim().notEmpty().withMessage('Item description is required').escape(),
   body('items.*.price').isNumeric().withMessage('Item price must be a number'),

@@ -206,3 +206,34 @@ describe('submit behaviour (chunks 0.2 / 0.3 / 0.7)', () => {
     expect(btn.disabled).toBe(false);
   });
 });
+
+describe('item limit (chunk 1.1)', () => {
+  it('adds at most 15 rows, then disables Add Item and shows a hint', async () => {
+    const { window, document } = await boot();
+    const addBtn = document.getElementById('add-item-btn') as HTMLButtonElement;
+    const hint = document.getElementById('items-limit-hint')!;
+
+    for (let i = 0; i < 20; i += 1) {
+      addBtn.dispatchEvent(new window.Event('click', { bubbles: true }));
+    }
+
+    expect(document.querySelectorAll('.item-row').length).toBe(15);
+    expect(addBtn.disabled).toBe(true);
+    expect(hint.className).not.toContain('hidden');
+
+    // removing a row re-enables the button and hides the hint
+    (document.querySelector('.remove-item-btn') as HTMLElement).dispatchEvent(
+      new window.Event('click', { bubbles: true })
+    );
+    expect(document.querySelectorAll('.item-row').length).toBe(14);
+    expect(addBtn.disabled).toBe(false);
+    expect(hint.className).toContain('hidden');
+  });
+
+  it('uses type="button" on add/remove controls so they never submit the form', async () => {
+    const { document } = await boot();
+    expect((document.getElementById('add-item-btn') as HTMLButtonElement).type).toBe('button');
+    expect((document.querySelector('.remove-item-btn') as HTMLButtonElement).type).toBe('button');
+    expect((document.getElementById('submit-btn') as HTMLButtonElement).type).toBe('submit');
+  });
+});

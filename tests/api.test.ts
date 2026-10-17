@@ -142,3 +142,21 @@ describe('POST /pdf/invoice-generate — validation errors', () => {
     expect(msgs).toContain('Item quantity must be a number');
   });
 });
+
+describe('POST /pdf/invoice-generate — item limit (chunk 1.1)', () => {
+  const makeItems = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({ description: `Item ${i + 1}`, quantity: 1, price: i + 1 }));
+
+  it('accepts exactly 15 items', async () => {
+    const res = await postInvoice({ ...validPayload, items: makeItems(15) });
+    expect(res.status).toBe(200);
+    expect(isPdf(res.body)).toBe(true);
+  });
+
+  it('rejects 16 items with a clear message', async () => {
+    const res = await postInvoiceJson({ ...validPayload, items: makeItems(16) });
+    expect(res.status).toBe(400);
+    const msgs = res.body.errors.map((e: { msg: string }) => e.msg);
+    expect(msgs).toContain('Items must be an array with at most 15 entries');
+  });
+});
