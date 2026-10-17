@@ -13,6 +13,8 @@ export const invoiceGenerate = async (req: Request, res: Response): Promise<void
       }
       const data: invoiceData = req.body;
       data.number = uuidv4().split('-')[0];
+      const currency = data.currency ?? '';
+      const taxRate = data.taxRate ?? 0;
       const doc = new PDFDocument({ margin: 50 });
 
       res.setHeader('Content-Type', 'application/pdf');
@@ -73,15 +75,15 @@ export const invoiceGenerate = async (req: Request, res: Response): Promise<void
       let rowHeight = 305;
       let total = 0;
       data.items.forEach((element: invoiceItem) => {
-        doc.text(element.description, 55, rowHeight).text(element.quantity, 350, rowHeight).text(`${element.price}${data.currency}`, 450, rowHeight);
+        doc.text(element.description ?? '', 55, rowHeight).text(element.quantity ?? '', 350, rowHeight).text(`${element.price ?? ''}${currency}`, 450, rowHeight);
         rowHeight += 15;
-        const totalProductPrice = parseFloat(element.price) * parseFloat(element.quantity);
+        const totalProductPrice = (parseFloat(element.price) || 0) * (parseFloat(element.quantity) || 0);
         total += totalProductPrice;
       });
 
       // Tax
-      const taxValue = (data.taxRate * total) / 100;
-      doc.text(`Tax (${data.taxRate}%)`, 55, rowHeight).text(`${taxValue.toFixed(2)}${data.currency}`, 450, rowHeight);
+      const taxValue = (taxRate * total) / 100;
+      doc.text(`Tax (${taxRate}%)`, 55, rowHeight).text(`${taxValue.toFixed(2)}${currency}`, 450, rowHeight);
 
       // Total
       rowHeight += 15;
@@ -91,7 +93,7 @@ export const invoiceGenerate = async (req: Request, res: Response): Promise<void
         .stroke();
 
       rowHeight += 15;
-      doc.font('Helvetica-Bold').text('TOTAL', 400, rowHeight).text(`${total + taxValue}${data.currency}`, 450, rowHeight);
+      doc.font('Helvetica-Bold').text('TOTAL', 400, rowHeight).text(`${total + taxValue}${currency}`, 450, rowHeight);
 
       // Footer
       rowHeight += 15;
@@ -100,7 +102,7 @@ export const invoiceGenerate = async (req: Request, res: Response): Promise<void
         .text('Thank you for your business!', 50, rowHeight)
         .fontSize(8)
         .text('If you have any questions about this invoice, please contact Us', 50, rowHeight + 40)
-        .text(`[${data.company.name}, ${data.company.phone}, ${data.company.email}]`, 50, rowHeight + 50);
+        .text(`[${data.company.name}, ${data.company.phone ?? ''}, ${data.company.email ?? ''}]`, 50, rowHeight + 50);
 
       doc.end();
   } catch (error) {
