@@ -285,19 +285,23 @@
             invoiceData.subtotal = subtotal;
             invoiceData.total = subtotal * (1 + invoiceData.taxRate / 100);
 
-            console.log("--- Document Data for Backend ---");
-            console.log(JSON.stringify(invoiceData, null, 2));
+            const showToast = (el, message) => {
+                el.textContent = message;
+                el.classList.remove('opacity-0', '-translate-y-2');
+                el.classList.add('opacity-100', 'translate-y-0');
+                setTimeout(() => {
+                    el.classList.remove('opacity-100', 'translate-y-0');
+                    el.classList.add('opacity-0', '-translate-y-2');
+                }, 3000);
+            };
 
-            const notification = document.getElementById('notification-toast');
-            notification.classList.remove('opacity-0', '-translate-y-2');
-            notification.classList.add('opacity-100', 'translate-y-0');
-
-            setTimeout(() => {
-                notification.classList.remove('opacity-100', 'translate-y-0');
-                notification.classList.add('opacity-0', '-translate-y-2');
-                submitBtn.textContent = 'Submit for Processing';
-                submitBtn.disabled = false;
-            }, 3000);
+            const resetForm = () => {
+                // keep a valid option selected (setting value='' leaves the <select> invalid)
+                document.getElementById('invoice-type').selectedIndex = 0;
+                ['company-name', 'company-address', 'company-city', 'company-phone', 'company-email',
+                 'client-name', 'client-address', 'client-city', 'client-phone', 'client-email',
+                 'payment-type', 'notes'].forEach((id) => { document.getElementById(id).value = ''; });
+            };
 
            fetch('/pdf/invoice-generate', {
                 method: 'POST',
@@ -320,18 +324,9 @@
                     } catch (e) {
                         // response body was not JSON; keep the generic message
                     }
-                    const notificationError = document.getElementById('notification-toast-error');
-                    notificationError.textContent = message;
-                    notificationError.classList.remove('opacity-0', '-translate-y-2');
-                    notificationError.classList.add('opacity-100', 'translate-y-0');
-                    setTimeout(() => {
-                        notificationError.classList.remove('opacity-100', 'translate-y-0');
-                        notificationError.classList.add('opacity-0', '-translate-y-2');
-                    }, 3000);
-
-                    throw new Error('Network response was not ok');
+                    throw new Error(message);
                 }
-                return res.blob()
+                return res.blob();
             })
             .then(blob => {
                 const url = window.URL.createObjectURL(blob);
@@ -340,19 +335,16 @@
                 a.download = 'invoice.pdf';
                 a.click();
                 window.URL.revokeObjectURL(url);
-                document.getElementById('invoice-type').value = '';
-                document.getElementById('company-name').value = '';
-                document.getElementById('company-address').value = '';
-                document.getElementById('company-city').value = '';
-                document.getElementById('company-phone').value = '';
-                document.getElementById('company-email').value = '';
-                document.getElementById('client-name').value = '';
-                document.getElementById('client-address').value = '';
-                document.getElementById('client-city').value = '';
-                document.getElementById('client-phone').value = '';
-                document.getElementById('client-email').value = '';
-                document.getElementById('payment-type').value = '';
-                document.getElementById('notes').value = '';
+
+                showToast(document.getElementById('notification-toast'), 'Invoice generated successfully');
+                resetForm();
+            })
+            .catch(err => {
+                showToast(document.getElementById('notification-toast-error'), (err && err.message) ? err.message : 'Something went wrong, please try again.');
+            })
+            .finally(() => {
+                submitBtn.textContent = 'Submit for Processing';
+                submitBtn.disabled = false;
             });
         });
 
