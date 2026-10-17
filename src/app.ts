@@ -2,6 +2,7 @@ import express from 'express';
 import { Request, Response } from 'express';
 import path from 'path';
 import invoiceRoutes from './routes/invoiceRoute';
+import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
 const rootDir = process.cwd();
@@ -16,5 +17,8 @@ app.get('/', (_req: Request, res: Response) => {
 });
 
 app.use('/pdf', invoiceRoutes);
+
+// Terminal error handler: converts thrown/rejected errors into a JSON 500.
+app.use(errorHandler);
 
 export default app;
