@@ -75,10 +75,12 @@ export const invoiceGenerate = async (req: Request, res: Response): Promise<void
       let rowHeight = 305;
       let total = 0;
       data.items.forEach((element: invoiceItem) => {
-        doc.text(element.description ?? '', 55, rowHeight).text(element.quantity ?? '', 350, rowHeight).text(`${element.price ?? ''}${currency}`, 450, rowHeight);
+        doc
+          .text(element.description ?? '', 55, rowHeight)
+          .text(String(element.quantity ?? ''), 350, rowHeight)
+          .text(`${element.price ?? ''}${currency}`, 450, rowHeight);
         rowHeight += 15;
-        const totalProductPrice = (parseFloat(element.price) || 0) * (parseFloat(element.quantity) || 0);
-        total += totalProductPrice;
+        total += (element.price || 0) * (element.quantity || 0);
       });
 
       // Tax

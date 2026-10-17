@@ -71,6 +71,21 @@ describe('POST /pdf/invoice-generate — happy path', () => {
     expect(text).toContain('2.00$'); // tax amount
     expect(text).toContain('22$'); // grand total
   });
+
+  it('handles numeric quantity/price directly (chunk 1.2 type contract)', async () => {
+    const res = await postInvoice(validPayload);
+    expect(res.status).toBe(200);
+    const text = extractPdfText(res.body);
+    expect(text).toContain('22$');
+
+    // numeric strings pass validation and still compute correctly at runtime
+    const asStrings = await postInvoice({
+      ...validPayload,
+      items: [{ description: 'd', quantity: '2', price: '10' }],
+    });
+    expect(asStrings.status).toBe(200);
+    expect(extractPdfText(asStrings.body)).toContain('22$');
+  });
 });
 
 describe('POST /pdf/invoice-generate — optional fields / undefined guards', () => {
