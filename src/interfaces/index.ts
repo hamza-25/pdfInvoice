@@ -6,7 +6,7 @@ export interface invoiceItem {
 
 export interface companyData {
   name:string;
-  address: string;
+  address?: string;
   city?: string; 
   phone?: string;
   email?: string;

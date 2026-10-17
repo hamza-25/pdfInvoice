@@ -28,7 +28,7 @@ export const invoiceGenerate = async (req: Request, res: Response): Promise<void
       doc
         .fontSize(10)
         .text(data.company.name, 50, 50)
-        .text(data.company.address, 50, 65)
+        .text(data.company.address || '', 50, 65)
         .text(data.company.city || '', 50, 80);
 
       // Invoice Info
