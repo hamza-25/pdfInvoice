@@ -32,3 +32,13 @@ export function extractPdfText(pdf: Buffer): string {
 export function isPdf(pdf: Buffer): boolean {
   return pdf.subarray(0, 4).toString('latin1') === '%PDF';
 }
+
+/**
+ * Count the page objects in a PDF. Object dictionaries are stored uncompressed,
+ * so `/Type /Page` appears once per page (`/Type /Pages` is the page tree and is
+ * excluded by the word boundary).
+ */
+export function countPdfPages(pdf: Buffer): number {
+  const raw = pdf.toString('latin1');
+  return (raw.match(/\/Type\s*\/Page\b/g) ?? []).length;
+}

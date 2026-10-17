@@ -2,8 +2,7 @@ import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import type { Response as SuperAgentResponse } from 'superagent';
 import app from '../src/app';
-import { extractPdfText, isPdf } from './helpers/pdf';
-
+import { extractPdfText, isPdf, countPdfPages } from './helpers/pdf';
 /** Collect the raw response body as a Buffer (the response is a PDF). */
 const binaryParser = (res: NodeJS.ReadableStream, callback: (err: Error | null, body: Buffer) => void) => {
   const chunks: Buffer[] = [];
@@ -173,5 +172,41 @@ describe('POST /pdf/invoice-generate — item limit (chunk 1.1)', () => {
     expect(res.status).toBe(400);
     const msgs = res.body.errors.map((e: { msg: string }) => e.msg);
     expect(msgs).toContain('Items must be an array with at most 15 entries');
+  });
+});
+
+describe('POST /pdf/invoice-generate — dynamic layout (chunk 1.3)', () => {
+  const makeItems = (n: number, description = (i: number) => `Line item ${i + 1}`) =>
+    Array.from({ length: n }, (_, i) => ({ description: description(i), quantity: 1, price: i + 1 }));
+
+  it('paginates when wrapped rows overflow one page (15 items, multi-line)', async () => {
+    const rows = makeItems(
+      15,
+      (i) => `ITEM_${String(i + 1).padStart(2, '0')} ` + 'lorem ipsum dolor sit amet consectetur adipiscing elit '.repeat(6)
+    );
+    const res = await postInvoice({ ...validPayload, items: rows });
+    expect(res.status).toBe(200);
+    expect(countPdfPages(res.body)).toBeGreaterThan(1);
+
+    const text = extractPdfText(res.body);
+    for (let i = 1; i <= 15; i += 1) {
+      expect(text).toContain(`ITEM_${String(i).padStart(2, '0')}`);
+    }
+    // totals still rendered once, after the last row
+    expect(text).toContain('Tax (10%)');
+    expect(text).toContain('132'); // sum(1..15) = 120, + 10% tax = 132
+  });
+
+  it('renders a long description in full (wrapping, not truncating)', async () => {
+    const longDescription =
+      'A very long description that should wrap across several lines within the description column ' +
+      'without overlapping the quantity or amount columns, and it must still be completely visible in the output.';
+    const res = await postInvoice({ ...validPayload, items: makeItems(1, () => longDescription) });
+    expect(res.status).toBe(200);
+
+    const text = extractPdfText(res.body);
+    for (const word of ['wrap', 'several', 'overlapping', 'completely', 'visible']) {
+      expect(text).toContain(word);
+    }
   });
 });
