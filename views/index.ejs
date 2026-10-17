@@ -185,24 +185,17 @@
 
 
 
-        selectTags.addEventListener('change', (e) => {
-            const selectedCurrency = e.target.value;
+        // --- Totals state + rendering (single source of truth) ---
+        let subtotalNumber = 0;
+        let totalNumber = 0;
 
-            const subtotalTag = document.getElementById('subtotal');
-            const subtotalValue = subtotalTag.textContent;
-            const totalAmountTag = document.getElementById('total-amount');
-            const totalAmountValue = subtotalTag.textContent;
-            console.log(`Subtotal value before change: ${subtotalValue}`);
+        const renderTotals = () => {
+            const symbol = selectTags.value;
+            document.getElementById('subtotal').textContent = `${symbol}${subtotalNumber.toFixed(2)}`;
+            document.getElementById('total-amount').textContent = `${symbol}${totalNumber.toFixed(2)}`;
+        };
 
-            if (subtotalValue[0] == 'd' && subtotalValue[1] == 'h') {
-                 subtotalTag.innerText = selectedCurrency + '' + subtotalValue.slice(2);
-                 totalAmountTag.innerText = selectedCurrency + '' + totalAmountValue.slice(2);
-            } else {
-                subtotalTag.innerText = selectedCurrency + ' ' + subtotalValue.slice(1);
-                totalAmountTag.innerText = selectedCurrency + ' ' + totalAmountValue.slice(1);
-            }
-
-        });
+        selectTags.addEventListener('change', renderTotals);
 
         // --- Core Functions ---
         const addNewItem = () => {
@@ -232,10 +225,11 @@
 
             const taxRate = parseFloat(document.getElementById('tax-rate').value) || 0;
             const taxAmount = subtotal * (taxRate / 100);
-            const totalAmount = subtotal + taxAmount;
 
-            document.getElementById('subtotal').textContent = `${selectTags.value}${subtotal.toFixed(2)}`;
-            document.getElementById('total-amount').textContent = `${selectTags.value}${totalAmount.toFixed(2)}`;
+            subtotalNumber = subtotal;
+            totalNumber = subtotal + taxAmount;
+
+            renderTotals();
         };
 
         // --- Event Listeners ---
