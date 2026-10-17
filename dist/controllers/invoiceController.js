@@ -1,9 +1,4 @@
 "use strict";
-// // import { Request, Response } from 'express';
-// // import PDFDocument from 'pdfkit';
-// // import {invoiceData, invoiceItem} from '../interfaces';
-// // import { v4 as uuidv4 } from 'uuid';
-// // import { validationResult } from 'express-validator';
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -89,12 +84,12 @@ const invoiceGenerate = (req, res) => __awaiter(void 0, void 0, void 0, function
         });
         // Tax
         const taxValue = (data.taxRate * total) / 100;
-        doc.text(`Tax (${data.taxRate}%)`, 55, rowHeight /*350*/).text(`${taxValue.toFixed(2)}${data.currency}`, 450, rowHeight /*350*/);
+        doc.text(`Tax (${data.taxRate}%)`, 55, rowHeight).text(`${taxValue.toFixed(2)}${data.currency}`, 450, rowHeight);
         // Total
-        rowHeight += 15; // Move to the next row for total
+        rowHeight += 15;
         doc
-            .moveTo(50, /*380*/ rowHeight)
-            .lineTo(550, /*380*/ rowHeight)
+            .moveTo(50, rowHeight)
+            .lineTo(550, rowHeight)
             .stroke();
         rowHeight += 15;
         doc.font('Helvetica-Bold').text('TOTAL', 400, rowHeight).text(`${total + taxValue}${data.currency}`, 450, rowHeight);
@@ -102,17 +97,15 @@ const invoiceGenerate = (req, res) => __awaiter(void 0, void 0, void 0, function
         rowHeight += 15;
         doc
             .font('Helvetica')
-            .text('Thank you for your business!', 50, /*420*/ rowHeight)
+            .text('Thank you for your business!', 50, rowHeight)
             .fontSize(8)
             .text('If you have any questions about this invoice, please contact Us', 50, rowHeight + 40)
-            //.text('[Name, Phone, email@address.com]', 50, 470)
             .text(`[${data.company.name}, ${data.company.phone}, ${data.company.email}]`, 50, rowHeight + 50);
         doc.end();
     }
     catch (error) {
         console.error('Error generating invoice:', error);
         return res.status(500).render('index', error);
-        // res.status(500).json({ error: 'Internal server error' });
     }
 });
 exports.invoiceGenerate = invoiceGenerate;
