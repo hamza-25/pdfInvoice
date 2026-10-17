@@ -171,11 +171,12 @@
     <div id="notification-toast" class="fixed top-5 right-5 bg-green-600 text-white py-3 px-6 rounded-lg shadow-lg opacity-0 transform -translate-y-2">
         data sent
     </div>
-     <div id="notification-toast-error" class="fixed top-5 left-5 bg-red-600 text-white py-3 px-6 rounded-lg shadow-lg opacity-0 transform -translate-y-2">
-        Something went wrong,<br>please try again.
+     <div id="notification-toast-error" class="fixed top-5 left-5 bg-red-600 text-white py-3 px-6 rounded-lg shadow-lg whitespace-pre-line opacity-0 transform -translate-y-2">
+        Something went wrong, please try again.
     </div>
 
-     <script>        document.addEventListener('DOMContentLoaded', function() {
+     <script>
+        document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('invoice-form');
         const addItemBtn = document.getElementById('add-item-btn');
         const invoiceItemsContainer = document.getElementById('invoice-items');
@@ -309,17 +310,31 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(invoiceData)
             })
-            .then(res => {
+            .then(async res => {
                 if (!res.ok) {
-                    console.log(res);
-                const notificationError = document.getElementById('notification-toast-error');
-                notificationError.classList.remove('opacity-0', '-translate-y-2');
-                notificationError.classList.add('opacity-100', 'translate-y-0');
-                setTimeout(() => { 
-                    notificationError.classList.remove('opacity-100', 'translate-y-0');
-                    notificationError.classList.add('opacity-0', '-translate-y-2');
-                }, 3000);
-                   
+                    let message = 'Something went wrong, please try again.';
+                    try {
+                        const errData = await res.json();
+                        if (errData.errors && errData.errors.length) {
+                            const msgs = errData.errors.map((err) => err.msg);
+                            const shown = msgs.slice(0, 3);
+                            if (msgs.length > 3) shown.push(`…and ${msgs.length - 3} more`);
+                            message = shown.join('\n');
+                        } else if (errData.error) {
+                            message = errData.error;
+                        }
+                    } catch (e) {
+                        // response body was not JSON; keep the generic message
+                    }
+                    const notificationError = document.getElementById('notification-toast-error');
+                    notificationError.textContent = message;
+                    notificationError.classList.remove('opacity-0', '-translate-y-2');
+                    notificationError.classList.add('opacity-100', 'translate-y-0');
+                    setTimeout(() => {
+                        notificationError.classList.remove('opacity-100', 'translate-y-0');
+                        notificationError.classList.add('opacity-0', '-translate-y-2');
+                    }, 3000);
+
                     throw new Error('Network response was not ok');
                 }
                 return res.blob()

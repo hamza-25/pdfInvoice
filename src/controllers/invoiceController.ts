@@ -4,14 +4,12 @@ import {invoiceData, invoiceItem} from '../interfaces';
 import { v4 as uuidv4 } from 'uuid';
 import { validationResult } from 'express-validator';
 
-export const invoiceGenerate = async (req: Request, res: Response) => {
+export const invoiceGenerate = async (req: Request, res: Response): Promise<void> => {
   try {
       const errors = validationResult(req);
       if(!errors.isEmpty()) {
-        return res.status(400).render('index', {
-    errors: errors.array(), 
-    old: req.body            
-  });
+        res.status(400).json({ errors: errors.array() });
+        return;
       }
       const data: invoiceData = req.body;
       data.number = uuidv4().split('-')[0];
@@ -107,6 +105,6 @@ export const invoiceGenerate = async (req: Request, res: Response) => {
       doc.end();
   } catch (error) {
     console.error('Error generating invoice:', error);
-    return res.status(500).render('index', error as any);
+    res.status(500).json({ error: 'Internal server error' });
   }
 }

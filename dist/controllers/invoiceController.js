@@ -20,10 +20,8 @@ const invoiceGenerate = (req, res) => __awaiter(void 0, void 0, void 0, function
     try {
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
-            return res.status(400).render('index', {
-                errors: errors.array(),
-                old: req.body
-            });
+            res.status(400).json({ errors: errors.array() });
+            return;
         }
         const data = req.body;
         data.number = (0, uuid_1.v4)().split('-')[0];
@@ -105,7 +103,7 @@ const invoiceGenerate = (req, res) => __awaiter(void 0, void 0, void 0, function
     }
     catch (error) {
         console.error('Error generating invoice:', error);
-        return res.status(500).render('index', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 exports.invoiceGenerate = invoiceGenerate;
