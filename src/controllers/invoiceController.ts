@@ -14,6 +14,9 @@ export const invoiceGenerate = async (req: Request, res: Response): Promise<void
     }
 
     const data: invoiceData = req.body;
+    // Never trust client-computed totals — they are always recalculated below.
+    delete data.subtotal;
+    delete data.total;
     data.number = uuidv4().split('-')[0];
     const currency = data.currency ?? '';
     const taxRate = data.taxRate ?? 0;

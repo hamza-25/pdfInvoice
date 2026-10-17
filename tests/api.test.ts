@@ -210,3 +210,14 @@ describe('POST /pdf/invoice-generate — dynamic layout (chunk 1.3)', () => {
     }
   });
 });
+
+describe('POST /pdf/invoice-generate — server-side totals (chunk 1.4)', () => {
+  it('ignores client-supplied subtotal/total and uses the computed values', async () => {
+    const res = await postInvoice({ ...validPayload, subtotal: 999, total: 1 });
+    expect(res.status).toBe(200);
+
+    const text = extractPdfText(res.body);
+    expect(text).toContain('22$'); // computed: 2 x 10 = 20, + 10% tax = 22
+    expect(text).not.toContain('999'); // client subtotal discarded
+  });
+});
