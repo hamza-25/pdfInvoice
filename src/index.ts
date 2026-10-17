@@ -15,7 +15,7 @@ app.use(express.static(path.join(rootDir, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.get('/', (req: Request, res: Response) => {
+app.get('/', (_req: Request, res: Response) => {
   res.render('index');
 });
 app.use('/pdf', invoiceRoutes);
