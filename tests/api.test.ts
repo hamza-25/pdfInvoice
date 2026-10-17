@@ -221,3 +221,17 @@ describe('POST /pdf/invoice-generate — server-side totals (chunk 1.4)', () => 
     expect(text).not.toContain('999'); // client subtotal discarded
   });
 });
+
+describe('POST /pdf/invoice-generate — invoice numbers (chunk 1.6)', () => {
+  it('assigns distinct, readable INV-YYYY-NNNN numbers to consecutive requests', async () => {
+    const first = await postInvoice(validPayload);
+    const second = await postInvoice(validPayload);
+
+    const numberA = extractPdfText(first.body).match(/INV-\d{4}-\d{4}/)?.[0];
+    const numberB = extractPdfText(second.body).match(/INV-\d{4}-\d{4}/)?.[0];
+
+    expect(numberA).toBeTruthy();
+    expect(numberB).toBeTruthy();
+    expect(numberA).not.toBe(numberB);
+  });
+});

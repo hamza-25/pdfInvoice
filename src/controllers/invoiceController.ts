@@ -3,7 +3,7 @@ import PDFDocument from 'pdfkit';
 import { invoiceData, invoiceItem } from '../interfaces';
 import { validationResult } from 'express-validator';
 import { LAYOUT } from '../services/pdfLayout';
-import { v4 as uuidv4 } from 'uuid';
+import { generateInvoiceNumber } from '../services/invoiceNumber';
 import { catchAsync } from '../utils/catchAsync';
 
 export const invoiceGenerate = catchAsync(async (req: Request, res: Response): Promise<void> => {
@@ -17,7 +17,7 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
   // Never trust client-computed totals — they are always recalculated below.
   delete data.subtotal;
   delete data.total;
-  data.number = uuidv4().split('-')[0];
+  data.number = generateInvoiceNumber();
 
   const currency = data.currency ?? '';
   const taxRate = data.taxRate ?? 0;
