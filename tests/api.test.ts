@@ -256,6 +256,50 @@ describe('POST /pdf/invoice-generate — invoice numbers (chunk 1.6)', () => {
   });
 });
 
+describe('POST /pdf/invoice-generate — document types (chunk 4.1)', () => {
+  it('renders a QUOTE with its own title and "VALID UNTIL" label (uses dueDate)', async () => {
+    const res = await postInvoice({
+      ...validPayload,
+      documentType: 'QUOTE',
+      dueDate: '2026-02-15',
+    });
+    expect(res.status).toBe(200);
+
+    const text = extractPdfText(res.body);
+    expect(text).toContain('QUOTE');
+    expect(text).toContain('QUOTE #');
+    expect(text).toContain('VALID UNTIL:');
+    expect(text).toContain('2026-02-15'); // dueDate shown, not issueDate
+  });
+
+  it('renders a RECEIPT with its own title and "PAID ON" label', async () => {
+    const res = await postInvoice({ ...validPayload, documentType: 'RECEIPT' });
+    expect(res.status).toBe(200);
+
+    const text = extractPdfText(res.body);
+    expect(text).toContain('RECEIPT');
+    expect(text).toContain('RECEIPT #');
+    expect(text).toContain('PAID ON:');
+  });
+
+  it('renders PRODUCT INVOICE as an invoice', async () => {
+    const res = await postInvoice({ ...validPayload, documentType: 'PRODUCT INVOICE' });
+    expect(res.status).toBe(200);
+
+    const text = extractPdfText(res.body);
+    expect(text).toContain('INVOICE #');
+    expect(text).toContain('DATE:');
+  });
+
+  it('falls back to the invoice style for an unknown document type', async () => {
+    const res = await postInvoice({ ...validPayload, documentType: 'SOMETHING ELSE' });
+    expect(res.status).toBe(200);
+
+    const text = extractPdfText(res.body);
+    expect(text).toContain('INVOICE #');
+  });
+});
+
 describe('POST /pdf/invoice-generate — money rounding', () => {
   it('rounds tax and total to 2 decimals (2999.97 @ 5% = 150.00 tax, 3149.97 total)', async () => {
     const res = await postInvoice({

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import PDFDocument from 'pdfkit';
 import { invoiceData, invoiceItem } from '../interfaces';
 import { validationResult } from 'express-validator';
-import { LAYOUT } from '../services/pdfLayout';
+import { LAYOUT, documentTypeStyle } from '../services/pdfLayout';
 import { generateInvoiceNumber } from '../services/invoiceNumber';
 import { catchAsync } from '../utils/catchAsync';
 import { round2 } from '../utils/round2';
@@ -34,21 +34,36 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
   doc.pipe(res);
 
   // ---- Header ----
-  doc.fontSize(20).text('INVOICE', 450, LAYOUT.margin);
+  const style = documentTypeStyle(data.documentType);
+  const primaryDate =
+    style.dateField === 'dueDate' ? data.dueDate || data.issueDate : data.issueDate;
+
+  doc.fontSize(20).fillColor(style.accent).text(style.title, 450, LAYOUT.margin);
 
   // Company info (top-left)
   doc
+    .fillColor('black')
     .fontSize(10)
     .text(data.company.name, LAYOUT.margin, LAYOUT.margin)
     .text(data.company.address || '', LAYOUT.margin, LAYOUT.margin + 15)
     .text(data.company.city || '', LAYOUT.margin, LAYOUT.margin + 30);
 
-  // Invoice info (top-right)
+  // Document info (top-right)
   doc
-    .text('INVOICE #:', 400, 100)
+    .text(`${style.idLabel}:`, 400, 100)
     .text(data.number, 470, 100)
-    .text('DATE:', 400, 115)
-    .text(data.issueDate, 470, 115);
+    .text(`${style.dateLabel}:`, 400, 115)
+    .text(primaryDate ?? '', 470, 115);
+
+  // Accent rule under the header
+  doc
+    .moveTo(LAYOUT.margin, 85)
+    .lineTo(contentRight, 85)
+    .lineWidth(2)
+    .strokeColor(style.accent)
+    .stroke()
+    .lineWidth(1)
+    .strokeColor('black');
 
   // ---- Bill To box ----
   doc

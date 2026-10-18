@@ -39,3 +39,56 @@ export const LAYOUT = {
     footerHeight: 55,
   },
 } as const;
+
+/** How a document type is presented in the PDF header. */
+export interface DocumentTypeStyle {
+  /** Big title in the top-right corner. */
+  title: string;
+  /** Accent color for the title and the underline rule. */
+  accent: string;
+  /** Label in front of the document number (e.g. "INVOICE #"). */
+  idLabel: string;
+  /** Label in front of the primary date. */
+  dateLabel: string;
+  /** Payload field holding the primary date value. */
+  dateField: 'issueDate' | 'dueDate';
+}
+
+/**
+ * Presentation per document type. Keys are the exact `documentType` values
+ * the form sends; anything unknown falls back to the invoice style.
+ */
+export const DOCUMENT_TYPES: Record<string, DocumentTypeStyle> = {
+  'SERVICE INVOICE': {
+    title: 'INVOICE',
+    accent: '#2563eb',
+    idLabel: 'INVOICE #',
+    dateLabel: 'DATE',
+    dateField: 'issueDate',
+  },
+  'PRODUCT INVOICE': {
+    title: 'INVOICE',
+    accent: '#2563eb',
+    idLabel: 'INVOICE #',
+    dateLabel: 'DATE',
+    dateField: 'issueDate',
+  },
+  QUOTE: {
+    title: 'QUOTE',
+    accent: '#d97706',
+    idLabel: 'QUOTE #',
+    dateLabel: 'VALID UNTIL',
+    dateField: 'dueDate',
+  },
+  RECEIPT: {
+    title: 'RECEIPT',
+    accent: '#059669',
+    idLabel: 'RECEIPT #',
+    dateLabel: 'PAID ON',
+    dateField: 'issueDate',
+  },
+};
+
+/** Resolve the style for a document type, falling back to a plain invoice. */
+export const documentTypeStyle = (documentType: string): DocumentTypeStyle =>
+  DOCUMENT_TYPES[documentType] ?? DOCUMENT_TYPES['SERVICE INVOICE'];
