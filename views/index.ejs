@@ -345,13 +345,21 @@
             })
             .then(blob => {
                 const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'invoice.pdf';
-                a.click();
-                window.URL.revokeObjectURL(url);
+                const preview = window.open(url, '_blank');
 
-                showToast(document.getElementById('notification-toast'), 'Invoice generated successfully');
+                if (preview) {
+                    // Give the new tab time to start loading the blob.
+                    setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+                    showToast(document.getElementById('notification-toast'), 'Invoice opened in a new tab');
+                } else {
+                    // Popup blocked — fall back to a direct download.
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'invoice.pdf';
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    showToast(document.getElementById('notification-toast'), 'Invoice generated successfully');
+                }
                 resetForm();
             })
             .catch(err => {

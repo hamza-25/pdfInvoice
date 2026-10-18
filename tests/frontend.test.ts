@@ -14,24 +14,42 @@ interface Harness {
   window: JSDOM['window'];
   document: Document;
   calls: FetchCall[];
+  /** URLs passed to window.open (the preview tab). */
+  openCalls: string[];
+  /** How often a download anchor was clicked (popup-blocked fallback). */
+  anchorClicks: () => number;
+}
+
+interface BootOptions {
+  /** Make window.open return null, as browsers do for blocked popups. */
+  popupBlocked?: boolean;
 }
 
 /**
  * Boot the form in jsdom with a mocked fetch (and mocked download), and resolve
  * once the inline script's DOMContentLoaded handler has run.
  */
-function boot(fetchImpl?: MockHandler): Promise<Harness> {
+function boot(fetchImpl?: MockHandler, options: BootOptions = {}): Promise<Harness> {
   const calls: FetchCall[] = [];
+  const openCalls: string[] = [];
+  const stats = { anchorClicks: 0 };
   return new Promise((resolve) => {
     const dom = new JSDOM(html, {
       runScripts: 'dangerously',
       url: 'http://localhost/',
       beforeParse(window) {
-        // Don't actually try to navigate on download.
-        window.HTMLAnchorElement.prototype.click = function () {};
+        // Don't actually try to navigate on download; count the clicks instead.
+        window.HTMLAnchorElement.prototype.click = function () {
+          stats.anchorClicks += 1;
+        };
         (window.URL as unknown as { createObjectURL: () => string }).createObjectURL = () =>
           'blob:mock';
         (window.URL as unknown as { revokeObjectURL: () => void }).revokeObjectURL = () => {};
+
+        (window as unknown as { open: (url: string) => unknown }).open = (url: string) => {
+          openCalls.push(url);
+          return options.popupBlocked ? null : {};
+        };
 
         window.fetch = ((url: string, options: FetchCall['options']) => {
           calls.push({ url, options });
@@ -46,7 +64,14 @@ function boot(fetchImpl?: MockHandler): Promise<Harness> {
         }) as unknown as typeof window.fetch;
 
         window.addEventListener('DOMContentLoaded', () => {
-          resolve({ dom, window, document: window.document, calls });
+          resolve({
+            dom,
+            window,
+            document: window.document,
+            calls,
+            openCalls,
+            anchorClicks: () => stats.anchorClicks,
+          });
         });
       },
     });
@@ -165,7 +190,7 @@ describe('submit behaviour (chunks 0.2 / 0.3 / 0.7)', () => {
 
     await flush();
     expect(toast.className).toContain('opacity-100');
-    expect(toast.textContent).toContain('success');
+    expect(toast.textContent).toContain('new tab'); // preview path (chunk 4.4)
 
     // B11 fix: the <select> keeps a valid option (was set to '', breaking the next submit)
     expect(type.value).not.toBe('');
@@ -174,6 +199,29 @@ describe('submit behaviour (chunks 0.2 / 0.3 / 0.7)', () => {
     const btn = document.getElementById('submit-btn') as HTMLButtonElement;
     expect(btn.disabled).toBe(false);
     expect(btn.textContent).toBe('Submit for Processing');
+  });
+
+  it('opens the PDF blob in a new tab for preview (chunk 4.4)', async () => {
+    const { window, document, openCalls } = await boot();
+
+    submit(window, document);
+    await flush();
+
+    expect(openCalls).toEqual(['blob:mock']);
+    expect(document.getElementById('notification-toast')!.textContent).toContain('new tab');
+  });
+
+  it('falls back to a direct download when the popup is blocked (chunk 4.4)', async () => {
+    const { window, document, openCalls, anchorClicks } = await boot(undefined, {
+      popupBlocked: true,
+    });
+
+    submit(window, document);
+    await flush();
+
+    expect(openCalls).toEqual(['blob:mock']); // open was still attempted
+    expect(anchorClicks()).toBe(1); // ...and the file was downloaded instead
+    expect(document.getElementById('notification-toast')!.textContent).toContain('success');
   });
 
   it('shows field messages from a 400 JSON response', async () => {
