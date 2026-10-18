@@ -6,7 +6,7 @@ import { ErrorRequestHandler } from 'express';
  * to Express if the response has already started streaming, e.g. a PDF
  * mid-flight).
  */
-export const errorHandler: ErrorRequestHandler = (err, _req, res, next) => {
+export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   if (res.headersSent) {
     return next(err);
   }
@@ -20,6 +20,6 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, next) => {
     return void res.status(400).json({ error: 'Malformed JSON body' });
   }
 
-  console.error('Unhandled error:', err);
+  req.log?.error({ err }, 'unhandled error');
   return void res.status(500).json({ error: 'Internal server error' });
 };

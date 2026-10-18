@@ -1,12 +1,27 @@
 import express, { Request, RequestHandler, Response } from 'express';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
+import pinoHttp from 'pino-http';
+import { randomUUID } from 'crypto';
+import { logger } from './logger';
 import invoiceRoutes from './routes/invoiceRoute';
 import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
 
 app.set('view engine', 'ejs');
+
+// Structured access logging with a request id per line.
+app.use(
+  pinoHttp({
+    logger,
+    genReqId: () => randomUUID(),
+    // The health probe fires every few seconds — keep it out of the access log.
+    autoLogging: { ignore: (req) => req.url === '/health' },
+    customLogLevel: (_req, res) =>
+      res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info',
+  }),
+);
 
 // Security headers. The CSP is tuned for the served page, which loads the
 // Tailwind CDN, Google Fonts and an inline <script> block.

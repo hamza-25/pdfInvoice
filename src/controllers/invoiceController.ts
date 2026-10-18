@@ -10,6 +10,7 @@ import { round2 } from '../utils/round2';
 export const invoiceGenerate = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    req.log.warn({ errors: errors.array() }, 'invoice validation failed');
     res.status(400).json({ errors: errors.array() });
     return;
   }
@@ -22,6 +23,7 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
 
   const currency = data.currency ?? '';
   const taxRate = data.taxRate ?? 0;
+  const startedAt = process.hrtime.bigint();
 
   const doc = new PDFDocument({ size: 'A4', margin: LAYOUT.margin });
   const contentRight = doc.page.width - LAYOUT.margin;
@@ -162,4 +164,10 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
     );
 
   doc.end();
+
+  const durationMs = Number(process.hrtime.bigint() - startedAt) / 1e6;
+  req.log.info(
+    { invoiceNumber: data.number, durationMs: Math.round(durationMs * 100) / 100 },
+    'invoice generated',
+  );
 });
