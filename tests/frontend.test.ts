@@ -259,6 +259,68 @@ describe('submit behaviour (chunks 0.2 / 0.3 / 0.7)', () => {
   });
 });
 
+describe('accessibility (chunk 4.5)', () => {
+  it('gives every form control an accessible name (label[for] or aria-label)', async () => {
+    const { document } = await boot();
+
+    const controls = document.querySelectorAll('input, select, textarea');
+    expect(controls.length).toBeGreaterThan(10);
+    const unnamed: string[] = [];
+    controls.forEach((control) => {
+      const id = control.getAttribute('id');
+      const hasLabel = id ? !!document.querySelector(`label[for="${id}"]`) : false;
+      const hasAria = !!control.getAttribute('aria-label');
+      if (!hasLabel && !hasAria) unnamed.push(control.outerHTML.slice(0, 120));
+    });
+    expect(unnamed).toEqual([]);
+  });
+
+  it('announces toasts through live regions', async () => {
+    const { document } = await boot();
+
+    const ok = document.getElementById('notification-toast')!;
+    const err = document.getElementById('notification-toast-error')!;
+    expect(ok.getAttribute('role')).toBe('status');
+    expect(ok.getAttribute('aria-live')).toBe('polite');
+    expect(err.getAttribute('role')).toBe('alert');
+    expect(err.getAttribute('aria-live')).toBe('assertive');
+  });
+
+  it('marks the server-required fields as required', async () => {
+    const { document } = await boot();
+
+    for (const id of ['company-name', 'client-name', 'invoice-date', 'currency', 'tax-rate']) {
+      expect(document.getElementById(id)!.hasAttribute('required')).toBe(true);
+    }
+  });
+
+  it('labels the dynamic item-row controls', async () => {
+    const { document } = await boot();
+
+    const row = document.querySelector('.item-row')!;
+    expect(row.querySelector('.description')!.getAttribute('aria-label')).toBe('Item description');
+    expect(row.querySelector('.quantity')!.getAttribute('aria-label')).toBe('Quantity');
+    expect(row.querySelector('.price')!.getAttribute('aria-label')).toBe('Price');
+    expect(row.querySelector('.remove-item-btn')!.getAttribute('aria-label')).toBe('Remove item');
+  });
+
+  it('has a visible keyboard focus style', async () => {
+    const { document } = await boot();
+
+    const css = document.querySelector('style')!.textContent ?? '';
+    expect(css).toContain(':focus-visible');
+  });
+
+  it('sets aria-busy on the submit button while the request is in flight', async () => {
+    const { window, document } = await boot(() => new Promise(() => {})); // never settles
+
+    submit(window, document);
+    const btn = document.getElementById('submit-btn')!;
+    expect(btn.getAttribute('aria-busy')).toBe('true');
+    expect(btn.disabled).toBe(true);
+  });
+});
+
 describe('item limit (chunk 1.1)', () => {
   it('adds at most 15 rows, then disables Add Item and shows a hint', async () => {
     const { window, document } = await boot();
