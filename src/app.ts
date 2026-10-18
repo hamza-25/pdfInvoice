@@ -80,6 +80,11 @@ const pdfLimiter = rateLimit({
 
 app.use('/pdf', pdfLimiter);
 
+// Liveness probe for the orchestrator (excluded from access logs above).
+app.get('/health', (_req: Request, res: Response) => {
+  res.status(200).json({ status: 'ok', uptime: process.uptime() });
+});
+
 app.get('/', (_req: Request, res: Response) => {
   res.render('index');
 });
