@@ -43,11 +43,25 @@ const validPayload = {
 };
 
 describe('GET /', () => {
-  it('renders the invoice form', async () => {
+  it('renders the invoice form with the language switcher', async () => {
     const res = await request(app).get('/');
     expect(res.status).toBe(200);
     expect(res.text).toContain('Professional Document Builder');
     expect(res.text).toContain('id="invoice-form"');
+    expect(res.text).toContain('src="/i18n.js"'); // dictionaries loaded as a script
+    expect(res.text).toContain('data-lang="fr"'); // EN|FR switcher present
+  });
+});
+
+describe('GET /i18n.js (chunk 5.3)', () => {
+  it('serves both dictionaries as a script the browser can load', async () => {
+    const res = await request(app).get('/i18n.js');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain('javascript');
+    expect(res.text).toContain('window.I18N');
+    expect(res.text).toContain('"ui.submit"');
+    expect(res.text).toContain('Générer le document'); // FR UI
+    expect(res.text).toContain('Submit for Processing'); // EN UI
   });
 });
 
