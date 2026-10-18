@@ -5,6 +5,7 @@ import { validationResult } from 'express-validator';
 import { LAYOUT } from '../services/pdfLayout';
 import { generateInvoiceNumber } from '../services/invoiceNumber';
 import { catchAsync } from '../utils/catchAsync';
+import { round2 } from '../utils/round2';
 
 export const invoiceGenerate = catchAsync(async (req: Request, res: Response): Promise<void> => {
   const errors = validationResult(req);
@@ -122,7 +123,10 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
   });
 
   // ---- Totals ----
-  const taxValue = (taxRate * total) / 100;
+  // Money is rounded to cents so the PDF never shows float artifacts (e.g. 3149.9685).
+  const subtotal = round2(total);
+  const taxValue = round2((subtotal * taxRate) / 100);
+  const grandTotal = round2(subtotal + taxValue);
   cursorY = ensureSpace(cursorY, LAYOUT.totals.height);
 
   doc
@@ -136,7 +140,7 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
   doc
     .font('Helvetica-Bold')
     .text('TOTAL', 400, cursorY)
-    .text(`${total + taxValue}${currency}`, LAYOUT.columns.amount.x, cursorY);
+    .text(`${grandTotal.toFixed(2)}${currency}`, LAYOUT.columns.amount.x, cursorY);
 
   // ---- Footer ----
   cursorY += LAYOUT.totals.footerGap;

@@ -78,14 +78,14 @@ describe('POST /pdf/invoice-generate — happy path', () => {
 
     expect(text).toContain('Tax (10%)');
     expect(text).toContain('2.00$'); // tax amount
-    expect(text).toContain('22$'); // grand total
+    expect(text).toContain('22.00$'); // grand total
   });
 
   it('handles numeric quantity/price directly (chunk 1.2 type contract)', async () => {
     const res = await postInvoice(validPayload);
     expect(res.status).toBe(200);
     const text = extractPdfText(res.body);
-    expect(text).toContain('22$');
+    expect(text).toContain('22.00$');
 
     // numeric strings pass validation and still compute correctly at runtime
     const asStrings = await postInvoice({
@@ -93,7 +93,7 @@ describe('POST /pdf/invoice-generate — happy path', () => {
       items: [{ description: 'd', quantity: '2', price: '10' }],
     });
     expect(asStrings.status).toBe(200);
-    expect(extractPdfText(asStrings.body)).toContain('22$');
+    expect(extractPdfText(asStrings.body)).toContain('22.00$');
   });
 });
 
@@ -237,7 +237,7 @@ describe('POST /pdf/invoice-generate — server-side totals (chunk 1.4)', () => 
     expect(res.status).toBe(200);
 
     const text = extractPdfText(res.body);
-    expect(text).toContain('22$'); // computed: 2 x 10 = 20, + 10% tax = 22
+    expect(text).toContain('22.00$'); // computed: 2 x 10 = 20, + 10% tax = 22
     expect(text).not.toContain('999'); // client subtotal discarded
   });
 });
@@ -253,5 +253,36 @@ describe('POST /pdf/invoice-generate — invoice numbers (chunk 1.6)', () => {
     expect(numberA).toBeTruthy();
     expect(numberB).toBeTruthy();
     expect(numberA).not.toBe(numberB);
+  });
+});
+
+describe('POST /pdf/invoice-generate — money rounding', () => {
+  it('rounds tax and total to 2 decimals (2999.97 @ 5% = 150.00 tax, 3149.97 total)', async () => {
+    const res = await postInvoice({
+      ...validPayload,
+      items: [{ description: 'Big widget', quantity: 1, price: 2999.97 }],
+      taxRate: 5,
+    });
+    expect(res.status).toBe(200);
+
+    const text = extractPdfText(res.body);
+    expect(text).toContain('150.00$'); // raw: 149.9985
+    expect(text).toContain('3149.97$'); // raw: 3149.9685
+    expect(text).not.toContain('3149.9685'); // float artifact must never leak into the PDF
+  });
+
+  it('rounds float-trap values (19.99 x 3 @ 7.25%)', async () => {
+    const res = await postInvoice({
+      ...validPayload,
+      items: [{ description: 'Trap', quantity: 3, price: 19.99 }],
+      taxRate: 7.25,
+    });
+    expect(res.status).toBe(200);
+
+    const text = extractPdfText(res.body);
+    // subtotal 59.97, tax 4.347825 -> 4.35, total 64.317825 -> 64.32
+    expect(text).toContain('4.35$');
+    expect(text).toContain('64.32$');
+    expect(text).not.toContain('64.31');
   });
 });
