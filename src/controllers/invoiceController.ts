@@ -3,6 +3,7 @@ import PDFDocument from 'pdfkit';
 import { invoiceData, invoiceItem } from '../interfaces';
 import { validationResult } from 'express-validator';
 import { LAYOUT, documentTypeStyle } from '../services/pdfLayout';
+import { formatMoney, formatDate } from '../services/currency';
 import { generateInvoiceNumber } from '../services/invoiceNumber';
 import { catchAsync } from '../utils/catchAsync';
 import { round2 } from '../utils/round2';
@@ -53,7 +54,7 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
     .text(`${style.idLabel}:`, 400, 100)
     .text(data.number, 470, 100)
     .text(`${style.dateLabel}:`, 400, 115)
-    .text(primaryDate ?? '', 470, 115);
+    .text(formatDate(primaryDate, currency), 470, 115);
 
   // Accent rule under the header
   doc
@@ -156,7 +157,7 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
         width: LAYOUT.columns.description.width,
       })
       .text(String(element.quantity ?? ''), LAYOUT.columns.quantity.x, cursorY)
-      .text(`${element.price ?? ''}${currency}`, LAYOUT.columns.amount.x, cursorY);
+      .text(formatMoney(Number(element.price) || 0, currency), LAYOUT.columns.amount.x, cursorY);
 
     cursorY += rowHeight;
     total += (element.price || 0) * (element.quantity || 0);
@@ -171,7 +172,7 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
 
   doc
     .text(`Tax (${taxRate}%)`, LAYOUT.columns.description.x, cursorY)
-    .text(`${taxValue.toFixed(2)}${currency}`, LAYOUT.columns.amount.x, cursorY);
+    .text(formatMoney(taxValue, currency), LAYOUT.columns.amount.x, cursorY);
 
   cursorY += LAYOUT.totals.lineGap;
   doc.moveTo(LAYOUT.margin, cursorY).lineTo(contentRight, cursorY).stroke();
@@ -180,7 +181,7 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
   doc
     .font('Helvetica-Bold')
     .text('TOTAL', 400, cursorY)
-    .text(`${grandTotal.toFixed(2)}${currency}`, LAYOUT.columns.amount.x, cursorY);
+    .text(formatMoney(grandTotal, currency), LAYOUT.columns.amount.x, cursorY);
 
   // ---- Footer ----
   cursorY += LAYOUT.totals.footerGap;

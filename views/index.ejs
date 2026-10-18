@@ -117,11 +117,11 @@
                     <div>
                         <label for="currency" class="block text-sm font-medium text-slate-500 mb-1">Currency</label>
                         <select name="" id="currency" required class="w-full p-2.5 rounded-md invoice-input">
-                            <option value="$">USD</option>
-                            <option value="dh">MAD</option>
-                            <option value="€">EUR</option>
-                            <option value="¥">JPY</option>
-                            <option value="£">GBP</option>
+                            <option value="USD">USD</option>
+                            <option value="MAD">MAD</option>
+                            <option value="EUR">EUR</option>
+                            <option value="JPY">JPY</option>
+                            <option value="GBP">GBP</option>
                         </select>
                     </div>
                 </section>
@@ -212,10 +212,25 @@
         let subtotalNumber = 0;
         let totalNumber = 0;
 
+        // Locale per currency, mirroring the server-side map (chunk 4.6).
+        const CURRENCY_LOCALES = { USD: 'en-US', MAD: 'fr-MA', EUR: 'de-DE', JPY: 'ja-JP', GBP: 'en-GB' };
+
+        const formatCurrency = (value, code) => {
+            try {
+                return new Intl.NumberFormat(CURRENCY_LOCALES[code] || 'en-US', {
+                    style: 'currency',
+                    currency: code,
+                }).format(value);
+            } catch (e) {
+                // Unknown code — never let Intl crash the form.
+                return `${value.toFixed(2)} ${code}`;
+            }
+        };
+
         const renderTotals = () => {
-            const symbol = selectTags.value;
-            document.getElementById('subtotal').textContent = `${symbol}${subtotalNumber.toFixed(2)}`;
-            document.getElementById('total-amount').textContent = `${symbol}${totalNumber.toFixed(2)}`;
+            const code = selectTags.value;
+            document.getElementById('subtotal').textContent = formatCurrency(subtotalNumber, code);
+            document.getElementById('total-amount').textContent = formatCurrency(totalNumber, code);
         };
 
         selectTags.addEventListener('change', renderTotals);

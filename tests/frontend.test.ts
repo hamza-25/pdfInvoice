@@ -125,24 +125,33 @@ describe('totals calculation', () => {
   });
 });
 
-describe('currency switcher (chunk 0.6)', () => {
-  it('re-renders the symbol on change without mangling values', async () => {
+describe('currency switcher (chunks 0.6 / 4.6)', () => {
+  it('re-renders amounts per currency locale on change without mangling values', async () => {
     const { window, document } = await boot();
     setItem(window, document, '2', '10', '0');
     const currency = document.getElementById('currency') as HTMLSelectElement;
 
-    currency.value = 'dh';
-    currency.dispatchEvent(new window.Event('change', { bubbles: true }));
-    expect(document.getElementById('subtotal')!.textContent).toBe('dh20.00');
-    expect(document.getElementById('total-amount')!.textContent).toBe('dh20.00');
+    const expected = (code: string, locale: string) =>
+      new Intl.NumberFormat(locale, { style: 'currency', currency: code }).format(20);
 
-    currency.value = '€';
+    currency.value = 'MAD';
     currency.dispatchEvent(new window.Event('change', { bubbles: true }));
-    expect(document.getElementById('subtotal')!.textContent).toBe('€20.00');
+    expect(document.getElementById('subtotal')!.textContent).toBe(expected('MAD', 'fr-MA'));
+    expect(document.getElementById('total-amount')!.textContent).toBe(expected('MAD', 'fr-MA'));
 
-    currency.value = '$';
+    currency.value = 'EUR';
     currency.dispatchEvent(new window.Event('change', { bubbles: true }));
-    expect(document.getElementById('subtotal')!.textContent).toBe('$20.00');
+    expect(document.getElementById('subtotal')!.textContent).toBe(expected('EUR', 'de-DE'));
+
+    currency.value = 'USD';
+    currency.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(document.getElementById('subtotal')!.textContent).toBe(expected('USD', 'en-US'));
+
+    // JPY has no fractional digits in Intl
+    currency.value = 'JPY';
+    currency.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(document.getElementById('subtotal')!.textContent).toBe(expected('JPY', 'ja-JP'));
+    expect(document.getElementById('subtotal')!.textContent).not.toContain('.00');
   });
 });
 

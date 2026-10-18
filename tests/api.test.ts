@@ -39,7 +39,7 @@ const validPayload = {
   issueDate: '2026-01-01',
   items: [{ description: 'Widget', quantity: 2, price: 10 }],
   taxRate: 10,
-  currency: '$',
+  currency: 'USD',
 };
 
 describe('GET /', () => {
@@ -77,15 +77,15 @@ describe('POST /pdf/invoice-generate — happy path', () => {
     const text = extractPdfText(res.body);
 
     expect(text).toContain('Tax (10%)');
-    expect(text).toContain('2.00$'); // tax amount
-    expect(text).toContain('22.00$'); // grand total
+    expect(text).toContain('2.00 $'); // tax amount
+    expect(text).toContain('22.00 $'); // grand total
   });
 
   it('handles numeric quantity/price directly (chunk 1.2 type contract)', async () => {
     const res = await postInvoice(validPayload);
     expect(res.status).toBe(200);
     const text = extractPdfText(res.body);
-    expect(text).toContain('22.00$');
+    expect(text).toContain('22.00 $');
 
     // numeric strings pass validation and still compute correctly at runtime
     const asStrings = await postInvoice({
@@ -93,7 +93,7 @@ describe('POST /pdf/invoice-generate — happy path', () => {
       items: [{ description: 'd', quantity: '2', price: '10' }],
     });
     expect(asStrings.status).toBe(200);
-    expect(extractPdfText(asStrings.body)).toContain('22.00$');
+    expect(extractPdfText(asStrings.body)).toContain('22.00 $');
   });
 });
 
@@ -259,7 +259,7 @@ describe('POST /pdf/invoice-generate — server-side totals (chunk 1.4)', () => 
     expect(res.status).toBe(200);
 
     const text = extractPdfText(res.body);
-    expect(text).toContain('22.00$'); // computed: 2 x 10 = 20, + 10% tax = 22
+    expect(text).toContain('22.00 $'); // computed: 2 x 10 = 20, + 10% tax = 22
     expect(text).not.toContain('999'); // client subtotal discarded
   });
 });
@@ -291,7 +291,7 @@ describe('POST /pdf/invoice-generate — document types (chunk 4.1)', () => {
     expect(text).toContain('QUOTE');
     expect(text).toContain('QUOTE #');
     expect(text).toContain('VALID UNTIL:');
-    expect(text).toContain('2026-02-15'); // dueDate shown, not issueDate
+    expect(text).toContain('February 15, 2026'); // dueDate, locale-formatted (chunk 4.6)
   });
 
   it('renders a RECEIPT with its own title and "PAID ON" label', async () => {
@@ -332,8 +332,8 @@ describe('POST /pdf/invoice-generate — money rounding', () => {
     expect(res.status).toBe(200);
 
     const text = extractPdfText(res.body);
-    expect(text).toContain('150.00$'); // raw: 149.9985
-    expect(text).toContain('3149.97$'); // raw: 3149.9685
+    expect(text).toContain('150.00 $'); // raw: 149.9985
+    expect(text).toContain('3,149.97 $'); // raw: 3149.9685 (en-US grouping)
     expect(text).not.toContain('3149.9685'); // float artifact must never leak into the PDF
   });
 
@@ -347,8 +347,54 @@ describe('POST /pdf/invoice-generate — money rounding', () => {
 
     const text = extractPdfText(res.body);
     // subtotal 59.97, tax 4.347825 -> 4.35, total 64.317825 -> 64.32
-    expect(text).toContain('4.35$');
-    expect(text).toContain('64.32$');
+    expect(text).toContain('4.35 $');
+    expect(text).toContain('64.32 $');
     expect(text).not.toContain('64.31');
+  });
+});
+
+describe('POST /pdf/invoice-generate — locale-aware money & dates (chunk 4.6)', () => {
+  it('renders MAD amounts with French separators and the dh symbol', async () => {
+    const res = await postInvoice({
+      ...validPayload,
+      currency: 'MAD',
+      items: [{ description: 'W', quantity: 1, price: 1234.5 }],
+    });
+    expect(res.status).toBe(200);
+
+    const text = extractPdfText(res.body);
+    expect(text).toContain('1.234,50 dh'); // line amount (fr-MA groups with '.')
+    expect(text).toContain('1.357,95 dh'); // total incl. 10% tax
+  });
+
+  it('renders JPY without fractional digits', async () => {
+    const res = await postInvoice({
+      ...validPayload,
+      currency: 'JPY',
+      items: [{ description: 'W', quantity: 1, price: 1234 }],
+    });
+    expect(res.status).toBe(200);
+
+    const text = extractPdfText(res.body);
+    expect(text).toContain('1,234 ¥'); // line amount
+    expect(text).toContain('1,357 ¥'); // 1234 * 1.1 = 1357.4 -> whole yen
+    expect(text).toContain('2026/01/01'); // date degraded to encodable short form
+    expect(text).not.toContain('年'); // never CJK glyphs the PDF fonts can't encode
+  });
+
+  it('formats the header date per locale', async () => {
+    const usd = await postInvoice(validPayload);
+    expect(usd.status).toBe(200);
+    expect(extractPdfText(usd.body)).toContain('January 1, 2026');
+
+    const eur = await postInvoice({ ...validPayload, currency: 'EUR' });
+    expect(eur.status).toBe(200);
+    expect(extractPdfText(eur.body)).toContain('1. Januar 2026');
+  });
+
+  it('still accepts legacy symbol payloads (backward compatibility)', async () => {
+    const res = await postInvoice({ ...validPayload, currency: '$' });
+    expect(res.status).toBe(200);
+    expect(extractPdfText(res.body)).toContain('22.00 $');
   });
 });

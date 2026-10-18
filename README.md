@@ -75,7 +75,7 @@ Example body:
   "paymentType": "Bank Transfer",
   "notes": "Thank you!",
   "taxRate": 10,
-  "currency": "$"
+  "currency": "USD"
 }
 ```
 
