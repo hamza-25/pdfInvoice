@@ -217,6 +217,28 @@ describe('POST /pdf/invoice-generate — dynamic layout (chunk 1.3)', () => {
     expect(text).toContain('132'); // sum(1..15) = 120, + 10% tax = 132
   });
 
+  it('stamps page numbers and a continuation header on every page (chunk 4.2)', async () => {
+    const rows = makeItems(
+      15,
+      (i) =>
+        `ITEM_${String(i + 1).padStart(2, '0')} ` +
+        'lorem ipsum dolor sit amet consectetur adipiscing elit '.repeat(6),
+    );
+    const res = await postInvoice({ ...validPayload, items: rows });
+    expect(res.status).toBe(200);
+
+    const pages = countPdfPages(res.body);
+    expect(pages).toBeGreaterThan(1);
+
+    const text = extractPdfText(res.body);
+    expect(text).toContain(`Page 1 of ${pages}`);
+    expect(text).toContain(`Page ${pages} of ${pages}`);
+
+    // the continuation header repeats the company name above the table on page 2+
+    const companyMentions = (text.match(/Acme/g) ?? []).length;
+    expect(companyMentions).toBeGreaterThanOrEqual(2);
+  });
+
   it('renders a long description in full (wrapping, not truncating)', async () => {
     const longDescription =
       'A very long description that should wrap across several lines within the description column ' +

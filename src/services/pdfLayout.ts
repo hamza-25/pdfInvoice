@@ -38,6 +38,18 @@ export const LAYOUT = {
     /** Space reserved for the footer block (page-break check). */
     footerHeight: 55,
   },
+
+  /** Compact header repeated at the top of every page after the first. */
+  continuation: {
+    /** Height reserved above the table header on continuation pages. */
+    height: 25,
+  },
+
+  /** Page-number footer stamped on every page. */
+  footer: {
+    /** Distance from the bottom edge of the page to the footer text. */
+    fromBottom: 30,
+  },
 } as const;
 
 /** How a document type is presented in the PDF header. */

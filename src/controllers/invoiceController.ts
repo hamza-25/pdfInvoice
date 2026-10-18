@@ -25,7 +25,7 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
   const taxRate = data.taxRate ?? 0;
   const startedAt = process.hrtime.bigint();
 
-  const doc = new PDFDocument({ size: 'A4', margin: LAYOUT.margin });
+  const doc = new PDFDocument({ size: 'A4', margin: LAYOUT.margin, bufferPages: true });
   const contentRight = doc.page.width - LAYOUT.margin;
   const bottomLimit = doc.page.height - LAYOUT.bottomMargin;
 
@@ -101,11 +101,35 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
     return lineY + LAYOUT.row.top;
   };
 
+  /**
+   * Compact header for pages after the first: company name on the left,
+   * document type + number on the right.
+   */
+  const drawContinuationHeader = (): void => {
+    doc
+      .font('Helvetica')
+      .fontSize(9)
+      .fillColor('black')
+      .text(data.company.name, LAYOUT.margin, LAYOUT.margin, { width: 250, ellipsis: true })
+      .text(`${style.title} ${data.number}`, contentRight - 200, LAYOUT.margin, {
+        width: 200,
+        align: 'right',
+      });
+  };
+
+  /** Start a new page with the continuation header + table header. */
+  const newPageWithHeader = (): number => {
+    doc.addPage();
+    drawContinuationHeader();
+    return drawTableHeader(LAYOUT.margin + LAYOUT.continuation.height);
+  };
+
   /** Add a page when `needed` points would overflow, and return the new y. */
   const ensureSpace = (y: number, needed: number): number => {
     if (y + needed > bottomLimit) {
       doc.addPage();
-      return LAYOUT.margin;
+      drawContinuationHeader();
+      return LAYOUT.margin + LAYOUT.continuation.height;
     }
     return y;
   };
@@ -122,8 +146,7 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
     const rowHeight = Math.max(LAYOUT.row.minHeight, descriptionHeight + LAYOUT.row.paddingY);
 
     if (cursorY + rowHeight > bottomLimit) {
-      doc.addPage();
-      cursorY = drawTableHeader(LAYOUT.margin);
+      cursorY = newPageWithHeader();
     }
 
     doc
@@ -177,6 +200,29 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
       LAYOUT.margin,
       cursorY + 50,
     );
+
+  // ---- Page numbers ----
+  // With bufferPages the content is already written but not yet flushed, so
+  // every buffered page can be visited to stamp "Page X of Y".
+  const range = doc.bufferedPageRange();
+  for (let i = range.start; i < range.start + range.count; i++) {
+    doc.switchToPage(i);
+    // Writing this close to the page edge needs the bottom margin disabled,
+    // otherwise PDFKit would spill the footer onto yet another page.
+    const savedBottomMargin = doc.page.margins.bottom;
+    doc.page.margins.bottom = 0;
+    doc
+      .font('Helvetica')
+      .fontSize(8)
+      .fillColor('black')
+      .text(
+        `Page ${i - range.start + 1} of ${range.count}`,
+        LAYOUT.margin,
+        doc.page.height - LAYOUT.footer.fromBottom,
+        { width: contentRight - LAYOUT.margin, align: 'center' },
+      );
+    doc.page.margins.bottom = savedBottomMargin;
+  }
 
   doc.end();
 
