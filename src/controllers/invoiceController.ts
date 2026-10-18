@@ -1,371 +1,235 @@
-// // import { Request, Response } from 'express';
-// // import PDFDocument from 'pdfkit';
-// // import {invoiceData, invoiceItem} from '../interfaces';
-// // import { v4 as uuidv4 } from 'uuid';
-// // import { validationResult } from 'express-validator';
-
-
-
-// // export const invoiceGenerate = async (req: Request, res: Response) => {
-// //   try {
-// //       const errors = validationResult(req);
-// //       if(!errors.isEmpty()) {
-// //         return res.status(400).render('index', { errors: errors.array(), old: req.body});
-// //       }
-// //       const data: invoiceData = req.body;
-// //       data.number = uuidv4().split('-')[0];
-// //       const doc = new PDFDocument({ margin: 50 });
-
-// //       res.setHeader('Content-Type', 'application/pdf');
-// //       res.setHeader('Content-Disposition', 'attachment; filename=static-invoice.pdf');
-// //       doc.pipe(res);
-
-// //       // Header
-// //       doc
-// //         .fontSize(20)
-// //         .text('INVOICE', 450, 50);
-
-// //       // Company Info
-// //       doc
-// //         .fontSize(10)
-// //         .text(data.company.name, 50, 50)
-// //         .text(data.company.address, 50, 65)
-// //         .text(data.company.city || '', 50, 80);
-
-// //       // Invoice Info
-// //       doc
-// //         .text('INVOICE #:', 400, 100)
-// //         .text(data.number, 470, 100)
-// //         .text('DATE:', 400, 115)
-// //         .text(data.issueDate, 470, 115);
-
-// //       // Bill To Box
-// //       doc
-// //         .rect(50, 140, 200, 20)
-// //         .fill('#e0e0e0')
-// //         .stroke()
-// //         .fillColor('black')
-// //         .text('BILL TO', 55, 145);
-
-// //       doc
-// //         .fillColor('black')
-// //         .text(data.client.name, 55, 165)
-// //         .text(data.client.address || '', 55, 180)
-// //         .text(data.client.city || '', 55, 195)
-// //         .text(data.client.phone || '', 55, 210)
-// //         .text(data.client.email || '', 55, 225);
-
-// //       // Table Headers
-// //       doc
-// //         .moveTo(50, 270)
-// //         .lineTo(550, 270)
-// //         .stroke();
-
-// //       doc
-// //         .text('DESCRIPTION', 55, 275)
-// //         .text('Quantity', 350, 275)
-// //         .text('AMOUNT', 450, 275);
-
-// //       doc
-// //         .moveTo(50, 290)
-// //         .lineTo(550, 290)
-// //         .stroke();
-
-// //       let rowHeight = 305;
-// //       let total = 0;
-// //       let itemsLimit = 1;
-// //       data.items.forEach((element: invoiceItem) => {
-// //         if (itemsLimit <= 15) {
-// //           doc.text(element.description, 55, rowHeight).text(element.quantity, 350, rowHeight).text(`${element.price}${data.currency}`, 450, rowHeight);
-// //           rowHeight += 15;
-// //           total += parseFloat(element.price);
-// //         }
-// //         itemsLimit += 1;
-// //       });
-
-// //       // Tax
-// //       let rowHeightAfterItems = 530; // Store the current row height for tax
-// //       const taxValue = (data.taxRate * total) / 100;
-// //       doc.text(`Tax (${data.taxRate}%)`, 55, rowHeightAfterItems/*350*/).text(`${taxValue.toFixed(2)}${data.currency}`, 450, rowHeightAfterItems/*350*/);
-    
-// //       // Total
-// //       rowHeightAfterItems += 15; // Move to the next row for total
-// //       doc
-// //         .moveTo(50, /*380*/rowHeightAfterItems)
-// //         .lineTo(550, /*380*/rowHeightAfterItems)
-// //         .stroke();
-      
-// //       rowHeightAfterItems += 15;
-// //       doc.font('Helvetica-Bold').text('TOTAL', 400, rowHeightAfterItems).text(`${total + taxValue}${data.currency}`, 450, rowHeightAfterItems);
-    
-// //       // Footer
-// //       rowHeightAfterItems += 15;
-// //       doc
-// //         .font('Helvetica')
-// //         .text('Thank you for your business!', 50, /*420*/rowHeightAfterItems)
-// //         .fontSize(8)
-// //         .text('If you have any questions about this invoice, please contact Us', 50, rowHeightAfterItems + 40)
-// //         //.text('[Name, Phone, email@address.com]', 50, 470)
-// //         .text(`[${data.company.name}, ${data.company.phone}, ${data.company.email}]`, 50, rowHeightAfterItems + 50);
-    
-// //       doc.end();
-// //   } catch (error) {
-// //     console.error('Error generating invoice:', error);
-// //     return res.status(500).render('index', error as any);
-// //     // res.status(500).json({ error: 'Internal server error' });
-// //   }
-// // }
-// import { Request, Response } from 'express';
-// import PDFDocument from 'pdfkit';
-// import { invoiceData, invoiceItem } from '../interfaces';
-// import { v4 as uuidv4 } from 'uuid';
-// import { validationResult } from 'express-validator';
-// import fs from 'fs';
-// import path from 'path';
-
-// export const invoiceGenerate = async (req: Request, res: Response) => {
-//   try {
-//     const errors = validationResult(req);
-//     if (!errors.isEmpty()) {
-//       return res.status(400).render('index', { errors: errors.array(), old: req.body });
-//     }
-
-//     const data: invoiceData = req.body;
-//     data.number = uuidv4().split('-')[0];
-
-//     const doc = new PDFDocument({ margin: 50 });
-
-//     // -------------------------
-//     // Create directory for invoices if it doesn't exist
-//     const invoicesDir = path.join(process.cwd(), `./${process.env.INVOICE_DIR_NAME}/invoices`);
-//     // if (!fs.existsSync(invoicesDir)) {
-//     //   fs.mkdirSync(invoicesDir, { recursive: true });
-//     // }
-//     // const invoicesDir = '/home/hamza/pdfInvoice/src/invoices/invoicesDir';
-
-//     const filePath = path.join(invoicesDir, `invoice-${data.number}.pdf`);
-//     const writeStream = fs.createWriteStream(filePath);
-//     doc.pipe(writeStream);
-
-//     // Header
-//     doc.fontSize(20).text('INVOICE', 450, 50);
-
-//     // Company Info
-//     doc
-//       .fontSize(10)
-//       .text(data.company.name, 50, 50)
-//       .text(data.company.address, 50, 65)
-//       .text(data.company.city || '', 50, 80);
-
-//     // Invoice Info
-//     doc
-//       .text('INVOICE #:', 400, 100)
-//       .text(data.number, 470, 100)
-//       .text('DATE:', 400, 115)
-//       .text(data.issueDate, 470, 115);
-
-//     // Bill To Box
-//     doc.rect(50, 140, 200, 20).fill('#e0e0e0').stroke().fillColor('black').text('BILL TO', 55, 145);
-
-//     doc
-//       .fillColor('black')
-//       .text(data.client.name, 55, 165)
-//       .text(data.client.address || '', 55, 180)
-//       .text(data.client.city || '', 55, 195)
-//       .text(data.client.phone || '', 55, 210)
-//       .text(data.client.email || '', 55, 225);
-
-//     // Table Headers
-//     doc.moveTo(50, 270).lineTo(550, 270).stroke();
-//     doc.text('DESCRIPTION', 55, 275).text('Quantity', 350, 275).text('AMOUNT', 450, 275);
-//     doc.moveTo(50, 290).lineTo(550, 290).stroke();
-
-//     // -------------------------
-//     let rowHeight = 305;
-//     let total = 0;
-//     let itemsLimit = 1;
-
-//     // for (const element of data.items) {
-//     //   if (itemsLimit > 15) break; // stop at max 15 items
-//     //   doc
-//     //     .text(element.description, 55, rowHeight)
-//     //     .text(element.quantity, 350, rowHeight)
-//     //     .text(`${element.price}${data.currency}`, 450, rowHeight);
-//     //   rowHeight += 15;
-//     //   total += parseFloat(element.price);
-//     //   itemsLimit += 1;
-//     // }
-//     for (const element of data.items) {
-//   if (itemsLimit > 15) break;
-
-//   const descriptionWidth = 280; // space for description column
-//   const descHeight = doc.heightOfString(element.description, { width: descriptionWidth });
-//   const lineHeight = Math.max(descHeight, 15); // at least one line tall
-
-//   doc.text(element.description, 55, rowHeight, { width: descriptionWidth })
-//      .text(element.quantity, 350, rowHeight)
-//      .text(`${element.price}${data.currency}`, 450, rowHeight);
-
-//   rowHeight += lineHeight + 5; // +5 for spacing
-//   total += parseFloat(element.price);
-//   itemsLimit += 1;
-// }
-
-
-//     // Tax
-//     let rowHeightAfterItems = 530; 
-//     const taxValue = (data.taxRate * total) / 100;
-//     doc
-//       .text(`Tax (${data.taxRate}%)`, 55, rowHeightAfterItems)
-//       .text(`${taxValue.toFixed(2)}${data.currency}`, 450, rowHeightAfterItems);
-
-//     // Total
-//     rowHeightAfterItems += 15;
-//     doc.moveTo(50, rowHeightAfterItems).lineTo(550, rowHeightAfterItems).stroke();
-
-//     rowHeightAfterItems += 15;
-//     doc
-//       .font('Helvetica-Bold')
-//       .text('TOTAL', 400, rowHeightAfterItems)
-//       .text(`${total + taxValue}${data.currency}`, 450, rowHeightAfterItems);
-
-//     // Footer
-//     rowHeightAfterItems += 15;
-//     doc
-//       .font('Helvetica')
-//       .text('Thank you for your business!', 50, rowHeightAfterItems)
-//       .fontSize(8)
-//       .text('If you have any questions about this invoice, please contact Us', 50, rowHeightAfterItems + 40)
-//       .text(`[${data.company.name}, ${data.company.phone}, ${data.company.email}]`, 50, rowHeightAfterItems + 50);
-
-//     doc.end(); // finalize PDF
-
-//     // Wait until PDF is fully written, then send it
-//     writeStream.on('finish', () => {
-//       res.download(filePath, `invoice-${data.number}.pdf`, (err) => {
-//         if (err) console.error('Error sending invoice:', err);
-//         // Optional: delete file after sending
-//         fs.unlink(filePath, () => {});
-//       });
-//     });
-
-//   } catch (error) {
-//     console.error('Error generating invoice:', error);
-//     return res.status(500).render('index', error as any);
-//   }
-// };
 import { Request, Response } from 'express';
 import PDFDocument from 'pdfkit';
-import {invoiceData, invoiceItem} from '../interfaces';
-import { v4 as uuidv4 } from 'uuid';
+import { invoiceData, invoiceItem } from '../interfaces';
 import { validationResult } from 'express-validator';
+import { LAYOUT, documentTypeStyle } from '../services/pdfLayout';
+import { formatMoney, formatDate } from '../services/currency';
+import { generateInvoiceNumber } from '../services/invoiceNumber';
+import { catchAsync } from '../utils/catchAsync';
+import { round2 } from '../utils/round2';
 
-
-
-export const invoiceGenerate = async (req: Request, res: Response) => {
-  try {
-      const errors = validationResult(req);
-      if(!errors.isEmpty()) {
-        return res.status(400).render('index', {
-    errors: errors.array(), 
-    old: req.body            
-  });
-      }
-      const data: invoiceData = req.body;
-      data.number = uuidv4().split('-')[0];
-      const doc = new PDFDocument({ margin: 50 });
-
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename=static-invoice.pdf');
-      doc.pipe(res);
-
-      // Header
-      doc
-        .fontSize(20)
-        .text('INVOICE', 450, 50);
-
-      // Company Info
-      doc
-        .fontSize(10)
-        .text(data.company.name, 50, 50)
-        .text(data.company.address, 50, 65)
-        .text(data.company.city || '', 50, 80);
-
-      // Invoice Info
-      doc
-        .text('INVOICE #:', 400, 100)
-        .text(data.number, 470, 100)
-        .text('DATE:', 400, 115)
-        .text(data.issueDate, 470, 115);
-
-      // Bill To Box
-      doc
-        .rect(50, 140, 200, 20)
-        .fill('#e0e0e0')
-        .stroke()
-        .fillColor('black')
-        .text('BILL TO', 55, 145);
-
-      doc
-        .fillColor('black')
-        .text(data.client.name, 55, 165)
-        .text(data.client.address || '', 55, 180)
-        .text(data.client.city || '', 55, 195)
-        .text(data.client.phone || '', 55, 210)
-        .text(data.client.email || '', 55, 225);
-
-      // Table Headers
-      doc
-        .moveTo(50, 270)
-        .lineTo(550, 270)
-        .stroke();
-
-      doc
-        .text('DESCRIPTION', 55, 275)
-        .text('Quantity', 350, 275)
-        .text('AMOUNT', 450, 275);
-
-      doc
-        .moveTo(50, 290)
-        .lineTo(550, 290)
-        .stroke();
-      let rowHeight = 305;
-      let total = 0;
-      data.items.forEach((element: invoiceItem) => {
-        doc.text(element.description, 55, rowHeight).text(element.quantity, 350, rowHeight).text(`${element.price}${data.currency}`, 450, rowHeight);
-        rowHeight += 15;
-        const totalProductPrice = parseFloat(element.price) * parseFloat(element.quantity);
-        total += totalProductPrice;
-      });
-    
-      // Tax
-      const taxValue = (data.taxRate * total) / 100;
-      doc.text(`Tax (${data.taxRate}%)`, 55, rowHeight /*350*/).text(`${taxValue.toFixed(2)}${data.currency}`, 450, rowHeight /*350*/);
-    
-      // Total
-      rowHeight += 15; // Move to the next row for total
-      doc
-        .moveTo(50, /*380*/rowHeight)
-        .lineTo(550, /*380*/rowHeight)
-        .stroke();
-      
-      rowHeight += 15;
-      doc.font('Helvetica-Bold').text('TOTAL', 400, rowHeight).text(`${total + taxValue}${data.currency}`, 450, rowHeight);
-    
-      // Footer
-      rowHeight += 15;
-      doc
-        .font('Helvetica')
-        .text('Thank you for your business!', 50, /*420*/rowHeight)
-        .fontSize(8)
-        .text('If you have any questions about this invoice, please contact Us', 50, rowHeight + 40)
-        //.text('[Name, Phone, email@address.com]', 50, 470)
-        .text(`[${data.company.name}, ${data.company.phone}, ${data.company.email}]`, 50, rowHeight + 50);
-    
-      doc.end();
-  } catch (error) {
-    console.error('Error generating invoice:', error);
-    return res.status(500).render('index', error as any);
-    // res.status(500).json({ error: 'Internal server error' });
+export const invoiceGenerate = catchAsync(async (req: Request, res: Response): Promise<void> => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    req.log.warn({ errors: errors.array() }, 'invoice validation failed');
+    res.status(400).json({ errors: errors.array() });
+    return;
   }
-}
+
+  const data: invoiceData = req.body;
+  // Never trust client-computed totals — they are always recalculated below.
+  delete data.subtotal;
+  delete data.total;
+  data.number = generateInvoiceNumber();
+
+  const currency = data.currency ?? '';
+  const taxRate = data.taxRate ?? 0;
+  const startedAt = process.hrtime.bigint();
+
+  const doc = new PDFDocument({ size: 'A4', margin: LAYOUT.margin, bufferPages: true });
+  const contentRight = doc.page.width - LAYOUT.margin;
+  const bottomLimit = doc.page.height - LAYOUT.bottomMargin;
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', 'attachment; filename=static-invoice.pdf');
+  doc.pipe(res);
+
+  // ---- Header ----
+  const style = documentTypeStyle(data.documentType);
+  const primaryDate =
+    style.dateField === 'dueDate' ? data.dueDate || data.issueDate : data.issueDate;
+
+  doc.fontSize(20).fillColor(style.accent).text(style.title, 450, LAYOUT.margin);
+
+  // Company info (top-left)
+  doc
+    .fillColor('black')
+    .fontSize(10)
+    .text(data.company.name, LAYOUT.margin, LAYOUT.margin)
+    .text(data.company.address || '', LAYOUT.margin, LAYOUT.margin + 15)
+    .text(data.company.city || '', LAYOUT.margin, LAYOUT.margin + 30);
+
+  // Document info (top-right)
+  doc
+    .text(`${style.idLabel}:`, 400, 100)
+    .text(data.number, 470, 100)
+    .text(`${style.dateLabel}:`, 400, 115)
+    .text(formatDate(primaryDate, currency), 470, 115);
+
+  // Accent rule under the header
+  doc
+    .moveTo(LAYOUT.margin, 90)
+    .lineTo(contentRight, 90)
+    .lineWidth(2)
+    .strokeColor(style.accent)
+    .stroke()
+    .lineWidth(1)
+    .strokeColor('black');
+
+  // ---- Bill To box ----
+  doc
+    .rect(LAYOUT.margin, 140, 200, 20)
+    .fill('#e0e0e0')
+    .stroke()
+    .fillColor('black')
+    .text('BILL TO', 55, 145);
+
+  doc
+    .fillColor('black')
+    .text(data.client.name, 55, 165)
+    .text(data.client.address || '', 55, 180)
+    .text(data.client.city || '', 55, 195)
+    .text(data.client.phone || '', 55, 210)
+    .text(data.client.email || '', 55, 225);
+
+  /**
+   * Draw the table header (rule, labels, rule) at `y` and return the y at
+   * which the first row should start. Re-drawn on every new page.
+   */
+  const drawTableHeader = (y: number): number => {
+    doc.moveTo(LAYOUT.margin, y).lineTo(contentRight, y).stroke();
+
+    const labelY = y + 5;
+    doc
+      .font('Helvetica')
+      .fontSize(10)
+      .text('DESCRIPTION', LAYOUT.columns.description.x, labelY)
+      .text('Quantity', LAYOUT.columns.quantity.x, labelY)
+      .text('AMOUNT', LAYOUT.columns.amount.x, labelY);
+
+    const lineY = y + 20;
+    doc.moveTo(LAYOUT.margin, lineY).lineTo(contentRight, lineY).stroke();
+    return lineY + LAYOUT.row.top;
+  };
+
+  /**
+   * Compact header for pages after the first: company name on the left,
+   * document type + number on the right.
+   */
+  const drawContinuationHeader = (): void => {
+    doc
+      .font('Helvetica')
+      .fontSize(9)
+      .fillColor('black')
+      .text(data.company.name, LAYOUT.margin, LAYOUT.margin, { width: 250, ellipsis: true })
+      .text(`${style.title} ${data.number}`, contentRight - 200, LAYOUT.margin, {
+        width: 200,
+        align: 'right',
+      });
+  };
+
+  /** Start a new page with the continuation header + table header. */
+  const newPageWithHeader = (): number => {
+    doc.addPage();
+    drawContinuationHeader();
+    return drawTableHeader(LAYOUT.margin + LAYOUT.continuation.height);
+  };
+
+  /** Add a page when `needed` points would overflow, and return the new y. */
+  const ensureSpace = (y: number, needed: number): number => {
+    if (y + needed > bottomLimit) {
+      doc.addPage();
+      drawContinuationHeader();
+      return LAYOUT.margin + LAYOUT.continuation.height;
+    }
+    return y;
+  };
+
+  // ---- Items table ----
+  let cursorY = drawTableHeader(270);
+  let total = 0;
+
+  data.items.forEach((element: invoiceItem) => {
+    const description = element.description ?? '';
+    const descriptionHeight = doc.heightOfString(description, {
+      width: LAYOUT.columns.description.width,
+    });
+    const rowHeight = Math.max(LAYOUT.row.minHeight, descriptionHeight + LAYOUT.row.paddingY);
+
+    if (cursorY + rowHeight > bottomLimit) {
+      cursorY = newPageWithHeader();
+    }
+
+    doc
+      .font('Helvetica')
+      .fontSize(10)
+      .text(description, LAYOUT.columns.description.x, cursorY, {
+        width: LAYOUT.columns.description.width,
+      })
+      .text(String(element.quantity ?? ''), LAYOUT.columns.quantity.x, cursorY)
+      .text(formatMoney(Number(element.price) || 0, currency), LAYOUT.columns.amount.x, cursorY);
+
+    cursorY += rowHeight;
+    total += (element.price || 0) * (element.quantity || 0);
+  });
+
+  // ---- Totals ----
+  // Money is rounded to cents so the PDF never shows float artifacts (e.g. 3149.9685).
+  const subtotal = round2(total);
+  const taxValue = round2((subtotal * taxRate) / 100);
+  const grandTotal = round2(subtotal + taxValue);
+  cursorY = ensureSpace(cursorY, LAYOUT.totals.height);
+
+  doc
+    .text(`Tax (${taxRate}%)`, LAYOUT.columns.description.x, cursorY)
+    .text(formatMoney(taxValue, currency), LAYOUT.columns.amount.x, cursorY);
+
+  cursorY += LAYOUT.totals.lineGap;
+  doc.moveTo(LAYOUT.margin, cursorY).lineTo(contentRight, cursorY).stroke();
+
+  cursorY += LAYOUT.totals.lineGap;
+  doc
+    .font('Helvetica-Bold')
+    .text('TOTAL', 400, cursorY)
+    .text(formatMoney(grandTotal, currency), LAYOUT.columns.amount.x, cursorY);
+
+  // ---- Footer ----
+  cursorY += LAYOUT.totals.footerGap;
+  cursorY = ensureSpace(cursorY, LAYOUT.totals.footerHeight);
+  doc
+    .font('Helvetica')
+    .fontSize(10)
+    .text('Thank you for your business!', LAYOUT.margin, cursorY)
+    .fontSize(8)
+    .text(
+      'If you have any questions about this invoice, please contact Us',
+      LAYOUT.margin,
+      cursorY + 40,
+    )
+    .text(
+      `[${data.company.name}, ${data.company.phone ?? ''}, ${data.company.email ?? ''}]`,
+      LAYOUT.margin,
+      cursorY + 50,
+    );
+
+  // ---- Page numbers ----
+  // With bufferPages the content is already written but not yet flushed, so
+  // every buffered page can be visited to stamp "Page X of Y".
+  const range = doc.bufferedPageRange();
+  for (let i = range.start; i < range.start + range.count; i++) {
+    doc.switchToPage(i);
+    // Writing this close to the page edge needs the bottom margin disabled,
+    // otherwise PDFKit would spill the footer onto yet another page.
+    const savedBottomMargin = doc.page.margins.bottom;
+    doc.page.margins.bottom = 0;
+    doc
+      .font('Helvetica')
+      .fontSize(8)
+      .fillColor('black')
+      .text(
+        `Page ${i - range.start + 1} of ${range.count}`,
+        LAYOUT.margin,
+        doc.page.height - LAYOUT.footer.fromBottom,
+        { width: contentRight - LAYOUT.margin, align: 'center' },
+      );
+    doc.page.margins.bottom = savedBottomMargin;
+  }
+
+  doc.end();
+
+  const durationMs = Number(process.hrtime.bigint() - startedAt) / 1e6;
+  req.log.info(
+    { invoiceNumber: data.number, durationMs: Math.round(durationMs * 100) / 100 },
+    'invoice generated',
+  );
+});

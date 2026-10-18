@@ -38,6 +38,13 @@
             border-color: #4299e1; /* A professional blue */
         }
 
+        /* Visible focus ring for keyboard navigation (WCAG 2.4.7) */
+        .invoice-input:focus-visible,
+        button:focus-visible {
+            outline: 2px solid #2563eb;
+            outline-offset: 2px;
+        }
+
         #notification-toast {
              transition: opacity 0.3s, transform 0.3s;
         }
@@ -54,10 +61,11 @@
 
         <!-- Main Content Area: Form -->
         <div class="max-w-4xl mx-auto">
-            <main id="invoice-form" class="bg-white p-6 md:p-8 rounded-2xl shadow-lg">
+            <form id="invoice-form" class="bg-white p-6 md:p-8 rounded-2xl shadow-lg">
                  <!-- Invoice Type -->
                 <section class="mb-8">
                     <h3 class="text-lg font-semibold text-slate-700 mb-2">Document Type</h3>
+                    <label for="invoice-type" class="sr-only">Document type</label>
                     <select id="invoice-type" class="w-full p-2.5 rounded-md invoice-input">
                         <option value="SERVICE INVOICE">Service Invoice</option>
                         <option value="PRODUCT INVOICE">Product Invoice</option>
@@ -70,46 +78,51 @@
                 <section class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-8">
                     <div>
                         <h3 class="text-lg font-semibold text-slate-700 mb-2">From</h3>
-                        <input id="company-name" type="text" placeholder="Your Company Name" class="w-full p-2.5 rounded-md invoice-input">
+                        <label for="company-name" class="sr-only">Company name</label>
+                        <input id="company-name" type="text" placeholder="Your Company Name" required class="w-full p-2.5 rounded-md invoice-input">
+                        <label for="company-address" class="sr-only">Company address</label>
                         <textarea id="company-address" placeholder="Your Address..." class="w-full p-2.5 mt-2 rounded-md invoice-input" rows="2"></textarea>
+                        <label for="company-phone" class="sr-only">Company phone</label>
                         <input id="company-phone" type="text" placeholder="Your Company phone" class="w-full p-2.5 rounded-md invoice-input">
+                        <label for="company-city" class="sr-only">Company city</label>
                         <input id="company-city" type="text" placeholder="Your company city" class="w-full p-2.5 rounded-md invoice-input">
+                        <label for="company-email" class="sr-only">Company email</label>
                         <input id="company-email" type="text" placeholder="Your company email" class="w-full p-2.5 rounded-md invoice-input">
                     </div>
                     <div>
                         <h3 class="text-lg font-semibold text-slate-700 mb-2">Bill To</h3>
-                        <input id="client-name" type="text" placeholder="Client's Company Name" class="w-full p-2.5 rounded-md invoice-input">
+                        <label for="client-name" class="sr-only">Client name</label>
+                        <input id="client-name" type="text" placeholder="Client's Company Name" required class="w-full p-2.5 rounded-md invoice-input">
+                        <label for="client-address" class="sr-only">Client address</label>
                         <textarea id="client-address" placeholder="Client's Address..." class="w-full p-2.5 mt-2 rounded-md invoice-input" rows="2"></textarea>
+                        <label for="client-phone" class="sr-only">Client phone</label>
                         <input id="client-phone" type="text" placeholder="Your client phone" class="w-full p-2.5 rounded-md invoice-input">
+                        <label for="client-city" class="sr-only">Client city</label>
                         <input id="client-city" type="text" placeholder="Your client city" class="w-full p-2.5 rounded-md invoice-input">
+                        <label for="client-email" class="sr-only">Client email</label>
                         <input id="client-email" type="text" placeholder="Your client email" class="w-full p-2.5 rounded-md invoice-input">
                     </div>
                 </section>
 
                 <!-- Invoice Metadata -->
                 <section class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-                    <!-- <div>
-                        <label for="invoice-number" class="block text-sm font-medium text-slate-500 mb-1">Number #</label>
-                        <input id="invoice-number" type="text" placeholder="001" class="w-full p-2.5 rounded-md invoice-input">
-                    </div> -->
                     <div>
                         <label for="invoice-date" class="block text-sm font-medium text-slate-500 mb-1">Date</label>
-                        <input id="invoice-date" type="date" class="w-full p-2.5 rounded-md invoice-input text-slate-500">
+                        <input id="invoice-date" type="date" required class="w-full p-2.5 rounded-md invoice-input text-slate-500">
                     </div>
                     <div>
                         <label for="due-date" class="block text-sm font-medium text-slate-500 mb-1">Due Date</label>
                         <input id="due-date" type="date" class="w-full p-2.5 rounded-md invoice-input text-slate-500">
                     </div>
                     <div>
-                        <label for="invoice-currency" class="block text-sm font-medium text-slate-500 mb-1">Currency</label>
-                        <select name="" id="currency" class="w-full p-2.5 rounded-md invoice-input">
-                            <option value="$">USD</option>
-                            <option value="dh">MAD</option>
-                            <option value="€">EUR</option>
-                            <option value="¥">JPY</option>
-                            <option value="£">GBP</option>
+                        <label for="currency" class="block text-sm font-medium text-slate-500 mb-1">Currency</label>
+                        <select name="" id="currency" required class="w-full p-2.5 rounded-md invoice-input">
+                            <option value="USD">USD</option>
+                            <option value="MAD">MAD</option>
+                            <option value="EUR">EUR</option>
+                            <option value="JPY">JPY</option>
+                            <option value="GBP">GBP</option>
                         </select>
-                        <!-- <input id="currency" type="text" placeholder="dollar" class="w-full p-2.5 rounded-md invoice-input"> -->
                     </div>
                 </section>
 
@@ -123,16 +136,19 @@
                                     <th class="p-2 font-semibold w-1/2 text-left">Description</th>
                                     <th class="p-2 font-semibold w-1/6 text-center">Qty</th>
                                     <th class="p-2 font-semibold w-1/4 text-center">Price</th>
-                                    <th class="p-2"></th>
+                                    <th class="p-2"><span class="sr-only">Actions</span></th>
                                 </tr>
                             </thead>
                             <tbody id="invoice-items"></tbody>
                         </table>
                     </div>
-                    <button id="add-item-btn" class="mt-4 text-blue-600 hover:text-blue-800 font-semibold flex items-center">
-                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                        Add Item
-                    </button>
+                    <div class="mt-4 flex items-center gap-3">
+                        <button type="button" id="add-item-btn" class="text-blue-600 hover:text-blue-800 font-semibold flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg class="w-5 h-5 mr-1" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                            Add Item
+                        </button>
+                        <span id="items-limit-hint" class="hidden text-sm text-amber-600">Maximum of 15 items reached.</span>
+                    </div>
                 </section>
                 
                  <!-- Totals Section -->
@@ -143,8 +159,8 @@
                                 <span id="subtotal">$0.00</span>
                             </div>
                             <div class="flex justify-between items-center text-slate-600">
-                                <span>Tax (%)</span>
-                                <input id="tax-rate" type="number" value="0" min="0" max="100" class="w-20 p-1 text-right rounded-md invoice-input">
+                                <label for="tax-rate">Tax (%)</label>
+                                <input id="tax-rate" type="number" value="0" min="0" max="100" required class="w-20 p-1 text-right rounded-md invoice-input">
                             </div>
                             <hr class="border-slate-300">
                             <div class="flex justify-between font-bold text-xl text-slate-800"><span class="">Total</span><span id="total-amount">$0.00</span></div>
@@ -155,10 +171,12 @@
                 <section class="grid grid-cols-1 md:grid-cols-2 gap-x-8">
                     <div>
                         <h3 class="text-lg font-semibold text-slate-700 mb-2">Payment Type</h3>
+                        <label for="payment-type" class="sr-only">Payment type</label>
                         <textarea id="payment-type" placeholder="e.g., Bank Transfer, Credit Card, Net 30" class="w-full p-2.5 rounded-md invoice-input" rows="4"></textarea>
                     </div>
                      <div>
                         <h3 class="text-lg font-semibold text-slate-700 mb-2">Notes</h3>
+                        <label for="notes" class="sr-only">Notes</label>
                         <textarea id="notes" placeholder="Thank you for your business!" class="w-full p-2.5 rounded-md invoice-input" rows="4"></textarea>
                     </div>
                 </section>
@@ -169,18 +187,17 @@
                         Submit for Processing
                     </button>
                 </section>
-            </main>
+            </form>
         </div>
     </div>
     
-    <div id="notification-toast" class="fixed top-5 right-5 bg-green-600 text-white py-3 px-6 rounded-lg shadow-lg opacity-0 transform -translate-y-2">
+    <div id="notification-toast" role="status" aria-live="polite" class="fixed top-5 right-5 bg-green-600 text-white py-3 px-6 rounded-lg shadow-lg opacity-0 transform -translate-y-2">
         data sent
     </div>
-     <div id="notification-toast-error" class="fixed top-5 left-5 bg-red-600 text-white py-3 px-6 rounded-lg shadow-lg opacity-0 transform -translate-y-2">
-        Something went wrong,<br>please try again.
+     <div id="notification-toast-error" role="alert" aria-live="assertive" class="fixed top-5 left-5 bg-red-600 text-white py-3 px-6 rounded-lg shadow-lg whitespace-pre-line opacity-0 transform -translate-y-2">
+        Something went wrong, please try again.
     </div>
 
-    <!-- <script src="../public/js/index.js"></script> -->
      <script>
         document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('invoice-form');
@@ -191,43 +208,60 @@
 
 
 
-        selectTags.addEventListener('change', (e) => {
-            const selectedCurrency = e.target.value;
+        // --- Totals state + rendering (single source of truth) ---
+        let subtotalNumber = 0;
+        let totalNumber = 0;
 
-            const subtotalTag = document.getElementById('subtotal');
-            const subtotalValue = subtotalTag.textContent;
-            const totalAmountTag = document.getElementById('total-amount');
-            const totalAmountValue = subtotalTag.textContent;
-            console.log(`Subtotal value before change: ${subtotalValue}`);
+        // Locale per currency, mirroring the server-side map (chunk 4.6).
+        const CURRENCY_LOCALES = { USD: 'en-US', MAD: 'fr-MA', EUR: 'de-DE', JPY: 'ja-JP', GBP: 'en-GB' };
 
-            if (subtotalValue[0] == 'd' && subtotalValue[1] == 'h') {
-                 subtotalTag.innerText = selectedCurrency + '' + subtotalValue.slice(2);
-                 totalAmountTag.innerText = selectedCurrency + '' + totalAmountValue.slice(2);
-            } else {
-                subtotalTag.innerText = selectedCurrency + ' ' + subtotalValue.slice(1);
-                totalAmountTag.innerText = selectedCurrency + ' ' + totalAmountValue.slice(1);
+        const formatCurrency = (value, code) => {
+            try {
+                return new Intl.NumberFormat(CURRENCY_LOCALES[code] || 'en-US', {
+                    style: 'currency',
+                    currency: code,
+                }).format(value);
+            } catch (e) {
+                // Unknown code — never let Intl crash the form.
+                return `${value.toFixed(2)} ${code}`;
             }
+        };
 
-          // document.getElementById('subtotal').innerText = selectedCurrency;
-            //console.log(`Currency changed to: ${selectedCurrency}`);
-        });
+        const renderTotals = () => {
+            const code = selectTags.value;
+            document.getElementById('subtotal').textContent = formatCurrency(subtotalNumber, code);
+            document.getElementById('total-amount').textContent = formatCurrency(totalNumber, code);
+        };
+
+        selectTags.addEventListener('change', renderTotals);
 
         // --- Core Functions ---
+        const MAX_ITEMS = 15;
+
+        const updateAddItemState = () => {
+            const atLimit = document.querySelectorAll('.item-row').length >= MAX_ITEMS;
+            addItemBtn.disabled = atLimit;
+            addItemBtn.classList.toggle('opacity-50', atLimit);
+            document.getElementById('items-limit-hint').classList.toggle('hidden', !atLimit);
+        };
+
         const addNewItem = () => {
+            if (document.querySelectorAll('.item-row').length >= MAX_ITEMS) return;
             const itemRow = document.createElement('tr');
             itemRow.classList.add('item-row');
             itemRow.innerHTML = `
-                <td class="p-2"><input type="text" placeholder="Item description" maxlength="54" class="description w-full p-2 rounded-md invoice-input"></td>
-                <td class="p-2"><input type="number" value="1" min="1" class="quantity w-full p-2 text-center rounded-md invoice-input"></td>
-                <td class="p-2"><input type="number" value="0.00" min="0" step="0.01" class="price w-full p-2 text-center rounded-md invoice-input"></td>
+                <td class="p-2"><input type="text" placeholder="Item description" maxlength="54" aria-label="Item description" class="description w-full p-2 rounded-md invoice-input"></td>
+                <td class="p-2"><input type="number" value="1" min="1" aria-label="Quantity" class="quantity w-full p-2 text-center rounded-md invoice-input"></td>
+                <td class="p-2"><input type="number" value="0.00" min="0" step="0.01" aria-label="Price" class="price w-full p-2 text-center rounded-md invoice-input"></td>
                 <td class="p-2 text-center">
-                    <button class="remove-item-btn text-slate-400 hover:text-red-500 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    <button type="button" aria-label="Remove item" class="remove-item-btn text-slate-400 hover:text-red-500 transition-colors">
+                        <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                 </td>
             `;
             invoiceItemsContainer.appendChild(itemRow);
             updateTotals(); // Call updateTotals after adding
+            updateAddItemState();
         };
 
         const updateTotals = () => {
@@ -240,10 +274,11 @@
 
             const taxRate = parseFloat(document.getElementById('tax-rate').value) || 0;
             const taxAmount = subtotal * (taxRate / 100);
-            const totalAmount = subtotal + taxAmount;
 
-            document.getElementById('subtotal').textContent = `${selectTags.value}${subtotal.toFixed(2)}`;
-            document.getElementById('total-amount').textContent = `${selectTags.value}${totalAmount.toFixed(2)}`;
+            subtotalNumber = subtotal;
+            totalNumber = subtotal + taxAmount;
+
+            renderTotals();
         };
 
         // --- Event Listeners ---
@@ -262,12 +297,15 @@
             if (e.target.closest('.remove-item-btn')) {
                 e.target.closest('.item-row').remove();
                 updateTotals(); // Call updateTotals after removing
+                updateAddItemState();
             }
         });
 
-        submitBtn.addEventListener('click', () => {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault(); // stop native form submission (page navigation)
             submitBtn.textContent = 'Processing...';
             submitBtn.disabled = true;
+            submitBtn.setAttribute('aria-busy', 'true');
 
             const invoiceData = {
                 documentType: document.getElementById('invoice-type').value,
@@ -275,7 +313,6 @@
                 phone: document.getElementById('company-phone').value, city: document.getElementById('company-city').value, email: document.getElementById('company-email').value},
                 client: { name: document.getElementById('client-name').value, address: document.getElementById('client-address').value, 
                 phone: document.getElementById('client-phone').value, city: document.getElementById('client-city').value, email: document.getElementById('client-email').value},
-                // number: document.getElementById('invoice-number').value,
                 issueDate: document.getElementById('invoice-date').value,
                 dueDate: document.getElementById('due-date').value,
                 items: [],
@@ -299,61 +336,75 @@
             invoiceData.subtotal = subtotal;
             invoiceData.total = subtotal * (1 + invoiceData.taxRate / 100);
 
-            console.log("--- Document Data for Backend ---");
-            console.log(JSON.stringify(invoiceData, null, 2));
+            const showToast = (el, message) => {
+                el.textContent = message;
+                el.classList.remove('opacity-0', '-translate-y-2');
+                el.classList.add('opacity-100', 'translate-y-0');
+                setTimeout(() => {
+                    el.classList.remove('opacity-100', 'translate-y-0');
+                    el.classList.add('opacity-0', '-translate-y-2');
+                }, 3000);
+            };
 
-            const notification = document.getElementById('notification-toast');
-            notification.classList.remove('opacity-0', '-translate-y-2');
-            notification.classList.add('opacity-100', 'translate-y-0');
-
-            setTimeout(() => {
-                notification.classList.remove('opacity-100', 'translate-y-0');
-                notification.classList.add('opacity-0', '-translate-y-2');
-                submitBtn.textContent = 'Submit for Processing';
-                submitBtn.disabled = false;
-            }, 3000);
+            const resetForm = () => {
+                // keep a valid option selected (setting value='' leaves the <select> invalid)
+                document.getElementById('invoice-type').selectedIndex = 0;
+                ['company-name', 'company-address', 'company-city', 'company-phone', 'company-email',
+                 'client-name', 'client-address', 'client-city', 'client-phone', 'client-email',
+                 'payment-type', 'notes'].forEach((id) => { document.getElementById(id).value = ''; });
+            };
 
            fetch('/pdf/invoice-generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(invoiceData)
             })
-            .then(res => {
+            .then(async res => {
                 if (!res.ok) {
-                    console.log(res);
-                    //window.alert('Failed to generate invoice. Please try again.');
-                const notificationError = document.getElementById('notification-toast-error');
-                notificationError.classList.remove('opacity-0', '-translate-y-2');
-                notificationError.classList.add('opacity-100', 'translate-y-0');
-                setTimeout(() => { 
-                    notificationError.classList.remove('opacity-100', 'translate-y-0');
-                    notificationError.classList.add('opacity-0', '-translate-y-2');
-                }, 3000);
-                   
-                    throw new Error('Network response was not ok');
+                    let message = 'Something went wrong, please try again.';
+                    try {
+                        const errData = await res.json();
+                        if (errData.errors && errData.errors.length) {
+                            const msgs = errData.errors.map((err) => err.msg);
+                            const shown = msgs.slice(0, 3);
+                            if (msgs.length > 3) shown.push(`…and ${msgs.length - 3} more`);
+                            message = shown.join('\n');
+                        } else if (errData.error) {
+                            message = errData.error;
+                        }
+                    } catch (e) {
+                        // response body was not JSON; keep the generic message
+                    }
+                    throw new Error(message);
                 }
-                return res.blob()
+                return res.blob();
             })
             .then(blob => {
                 const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'invoice.pdf';
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.getElementById('invoice-type').value = '';
-                document.getElementById('company-name').value = '';
-                document.getElementById('company-address').value = '';
-                document.getElementById('company-city').value = '';
-                document.getElementById('company-phone').value = '';
-                document.getElementById('company-email').value = '';
-                document.getElementById('client-name').value = '';
-                document.getElementById('client-address').value = '';
-                document.getElementById('client-city').value = '';
-                document.getElementById('client-phone').value = '';
-                document.getElementById('client-email').value = '';
-                document.getElementById('payment-type').value = '';
-                document.getElementById('notes').value = '';
+                const preview = window.open(url, '_blank');
+
+                if (preview) {
+                    // Give the new tab time to start loading the blob.
+                    setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+                    showToast(document.getElementById('notification-toast'), 'Invoice opened in a new tab');
+                } else {
+                    // Popup blocked — fall back to a direct download.
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'invoice.pdf';
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    showToast(document.getElementById('notification-toast'), 'Invoice generated successfully');
+                }
+                resetForm();
+            })
+            .catch(err => {
+                showToast(document.getElementById('notification-toast-error'), (err && err.message) ? err.message : 'Something went wrong, please try again.');
+            })
+            .finally(() => {
+                submitBtn.textContent = 'Submit for Processing';
+                submitBtn.disabled = false;
+                submitBtn.removeAttribute('aria-busy');
             });
         });
 

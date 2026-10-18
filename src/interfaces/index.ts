@@ -1,23 +1,23 @@
 export interface invoiceItem {
   description: string;
-  quantity: string;
-  price: string;
+  quantity: number;
+  price: number;
 }
 
 export interface companyData {
-  name:string;
-  address: string;
-  city?: string; 
+  name: string;
+  address?: string;
+  city?: string;
   phone?: string;
   email?: string;
 }
 
 export interface clientData {
-   name: string;
-   address?: string;
-   city?: string;
-   phone?: string;
-   email?: string 
+  name: string;
+  address?: string;
+  city?: string;
+  phone?: string;
+  email?: string;
 }
 export interface invoiceData {
   documentType: string;

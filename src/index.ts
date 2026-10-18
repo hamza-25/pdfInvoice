@@ -1,45 +1,38 @@
-import express from 'express';
-import { Request, Response } from 'express';
 import dotenv from 'dotenv';
-import path from 'path';
 dotenv.config();
-import invoiceRoutes from './routes/invoiceRoute';
-import PDFDocument from 'pdfkit';
 
+import app from './app';
+import { logger } from './logger';
 
-const app = express();
 const PORT = process.env.PORT || 8000;
 const DOMAIN = process.env.DOMAIN || 'http://localhost';
-const rootDir = process.cwd();
-app.set('view engine', 'ejs');
-app.use(express.static(path.join(rootDir, 'public')));
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
 
-app.get('/', (req: Request, res: Response) => {
-  res.render('index');
+const server = app.listen(PORT, () => {
+  logger.info(`Server is running on ${DOMAIN}:${PORT}`);
 });
-app.use('/pdf', invoiceRoutes);
 
-// app.post('/download-pdf', (req, res) => {
-//   const doc = new PDFDocument();
+/** How long in-flight requests get to finish before the process is killed. */
+const SHUTDOWN_TIMEOUT_MS = 10_000;
 
-//   res.setHeader('Content-Type', 'application/pdf');
-//   res.setHeader('Content-Disposition', 'attachment; filename=invoice.pdf');
+/** Stop accepting new connections and let in-flight requests drain. */
+const shutdown = (signal: NodeJS.Signals): void => {
+  logger.info(`${signal} received: shutting down gracefully`);
 
-//   doc.pipe(res);
+  const forceExit = setTimeout(() => {
+    logger.error('Forcing shutdown: in-flight requests did not finish in time');
+    process.exit(1);
+  }, SHUTDOWN_TIMEOUT_MS);
+  forceExit.unref();
 
-//   doc.fontSize(25).text('Invoice', { align: 'center' });
-//   doc.moveDown().fontSize(12).text('Customer: John Doe');
-//   doc.text('Date: 2025-06-17');
-//   doc.moveDown().text('Item     Qty     Price');
-//   doc.text('T-Shirt   2      $20.00');
-//   doc.text('Shoes     1      $50.00');
-//   doc.moveDown().font('Helvetica-Bold').text('Total: $90.00');
+  server.close((err) => {
+    if (err) {
+      logger.error({ err }, 'Error while closing server');
+      process.exit(1);
+    }
+    logger.info('All connections closed, exiting');
+    process.exit(0);
+  });
+};
 
-//   doc.end(); // finalize PDF
-// });
-
-app.listen(PORT, () => {
-  console.log(`Server is running on ${DOMAIN}:${PORT}`);
-});
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
