@@ -29,24 +29,27 @@ describe('formatMoney (chunk 4.6)', () => {
   });
 });
 
-describe('formatDate (chunk 4.6)', () => {
-  it('formats ISO dates in the currency locale', () => {
-    expect(formatDate('2026-02-15', 'USD')).toBe('February 15, 2026');
-    expect(formatDate('2026-02-15', 'EUR')).toBe('15. Februar 2026');
+describe('formatDate (chunk 4.6, language-driven since 5.2)', () => {
+  it('formats ISO dates in the document language', () => {
+    expect(formatDate('2026-02-15', 'en')).toBe('February 15, 2026');
+    expect(formatDate('2026-02-15', 'fr')).toBe('15 février 2026');
   });
 
   it('returns empty string for missing dates and the raw string for non-ISO input', () => {
-    expect(formatDate(undefined, 'USD')).toBe('');
-    expect(formatDate('next week', 'USD')).toBe('next week');
+    expect(formatDate(undefined, 'en')).toBe('');
+    expect(formatDate('next week', 'en')).toBe('next week');
   });
 
-  it('degrades ja-JP long dates to an encodable short form (WinAnsi fonts)', () => {
-    // long: "2026年11月30日" — CJK glyphs PDFKit's standard fonts cannot encode
-    expect(formatDate('2026-11-30', 'JPY')).toBe('2026/11/30');
+  it('produces only WinAnsi-safe output for every supported language', () => {
+    for (const language of ['en', 'fr'] as const) {
+      const formatted = formatDate('2026-11-30', language);
+      // printable ASCII / latin1 — everything PDFKit's standard fonts encode
+      expect(formatted).toMatch(/^[ -~À-ÿ]+$/u);
+    }
   });
 
   it('does not shift the day across timezones (UTC-safe parse)', () => {
-    expect(formatDate('2026-01-01', 'USD')).toBe('January 1, 2026');
+    expect(formatDate('2026-01-01', 'en')).toBe('January 1, 2026');
   });
 });
 

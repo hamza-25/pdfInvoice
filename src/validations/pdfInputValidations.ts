@@ -1,5 +1,17 @@
 import { body } from 'express-validator';
+import type { Request } from 'express';
 import { stripControlChars } from '../utils/sanitize';
+import { t, resolveLanguage, type TranslationKey } from '../services/i18n';
+
+/**
+ * Translate a validation message by the `language` of the request body.
+ * An unknown/missing language falls back to English, so the classic
+ * English-only clients keep seeing exactly what they saw before.
+ */
+const msg =
+  (key: TranslationKey) =>
+  (_value: unknown, meta: { req: Request }): string =>
+    t(key, resolveLanguage(meta.req.body?.language));
 
 /**
  * Text fields destined for the PDF: strip control characters, then enforce a
@@ -11,120 +23,122 @@ export const pdfInputValidations = [
     .trim()
     .customSanitizer(stripControlChars)
     .notEmpty()
-    .withMessage('Document type is required')
+    .withMessage(msg('error.documentTypeRequired'))
     .isLength({ max: 60 })
-    .withMessage('Document type must be at most 60 characters'),
+    .withMessage(msg('error.documentTypeMax')),
 
-  body('company').isObject().withMessage('Company must be an object'),
+  body('company').isObject().withMessage(msg('error.companyObject')),
   body('company.name')
     .trim()
     .customSanitizer(stripControlChars)
     .notEmpty()
-    .withMessage('Company name is required')
+    .withMessage(msg('error.companyNameRequired'))
     .isLength({ max: 200 })
-    .withMessage('Company name must be at most 200 characters'),
+    .withMessage(msg('error.companyNameMax')),
   body('company.address')
     .optional()
     .trim()
     .customSanitizer(stripControlChars)
     .isLength({ max: 300 })
-    .withMessage('Company address must be at most 300 characters'),
+    .withMessage(msg('error.companyAddressMax')),
   body('company.email')
     .optional({ values: 'falsy' })
     .isEmail()
-    .withMessage('Company email must be a valid email address')
+    .withMessage(msg('error.companyEmail'))
     .normalizeEmail(),
   body('company.phone')
     .optional()
     .trim()
     .customSanitizer(stripControlChars)
     .isLength({ max: 50 })
-    .withMessage('Company phone must be at most 50 characters'),
+    .withMessage(msg('error.companyPhoneMax')),
   body('company.city')
     .optional()
     .trim()
     .customSanitizer(stripControlChars)
     .isLength({ max: 100 })
-    .withMessage('Company city must be at most 100 characters'),
+    .withMessage(msg('error.companyCityMax')),
 
-  body('client').isObject().withMessage('Client must be an object'),
+  body('client').isObject().withMessage(msg('error.clientObject')),
   body('client.name')
     .trim()
     .customSanitizer(stripControlChars)
     .notEmpty()
-    .withMessage('Client name is required')
+    .withMessage(msg('error.clientNameRequired'))
     .isLength({ max: 200 })
-    .withMessage('Client name must be at most 200 characters'),
+    .withMessage(msg('error.clientNameMax')),
   body('client.address')
     .optional()
     .trim()
     .customSanitizer(stripControlChars)
     .isLength({ max: 300 })
-    .withMessage('Client address must be at most 300 characters'),
+    .withMessage(msg('error.clientAddressMax')),
   body('client.email')
     .optional({ values: 'falsy' })
     .isEmail()
-    .withMessage('Client email must be a valid email address')
+    .withMessage(msg('error.clientEmail'))
     .normalizeEmail(),
   body('client.phone')
     .optional()
     .trim()
     .customSanitizer(stripControlChars)
     .isLength({ max: 50 })
-    .withMessage('Client phone must be at most 50 characters'),
+    .withMessage(msg('error.clientPhoneMax')),
   body('client.city')
     .optional()
     .trim()
     .customSanitizer(stripControlChars)
     .isLength({ max: 100 })
-    .withMessage('Client city must be at most 100 characters'),
+    .withMessage(msg('error.clientCityMax')),
 
   body('issueDate')
     .trim()
     .customSanitizer(stripControlChars)
     .notEmpty()
-    .withMessage('Issue date is required'),
+    .withMessage(msg('error.issueDateRequired')),
 
   body('dueDate')
     .optional()
     .trim()
     .customSanitizer(stripControlChars)
     .isLength({ max: 60 })
-    .withMessage('Due date must be at most 60 characters'),
+    .withMessage(msg('error.dueDateMax')),
 
-  body('items').isArray({ max: 15 }).withMessage('Items must be an array with at most 15 entries'),
+  body('items').isArray({ max: 15 }).withMessage(msg('error.itemsArray')),
 
   body('items.*.description')
     .trim()
     .customSanitizer(stripControlChars)
     .notEmpty()
-    .withMessage('Item description is required')
+    .withMessage(msg('error.itemDescriptionRequired'))
     .isLength({ max: 1000 })
-    .withMessage('Item description must be at most 1000 characters'),
-  body('items.*.price').isNumeric().withMessage('Item price must be a number'),
-  body('items.*.quantity').isNumeric().withMessage('Item quantity must be a number'),
+    .withMessage(msg('error.itemDescriptionMax')),
+  body('items.*.price').isNumeric().withMessage(msg('error.itemPriceNumber')),
+  body('items.*.quantity').isNumeric().withMessage(msg('error.itemQuantityNumber')),
 
   body('paymentType')
     .optional()
     .trim()
     .customSanitizer(stripControlChars)
     .isLength({ max: 100 })
-    .withMessage('Payment type must be at most 100 characters'),
+    .withMessage(msg('error.paymentTypeMax')),
 
   body('notes')
     .optional()
     .trim()
     .customSanitizer(stripControlChars)
     .isLength({ max: 2000 })
-    .withMessage('Notes must be at most 2000 characters'),
+    .withMessage(msg('error.notesMax')),
 
-  body('taxRate').isNumeric().withMessage('Tax rate must be a number'),
+  body('taxRate').isNumeric().withMessage(msg('error.taxRateNumber')),
 
   body('currency')
     .trim()
     .customSanitizer(stripControlChars)
     .notEmpty()
-    .withMessage('Currency is required')
+    .withMessage(msg('error.currencyRequired'))
     .isLength({ max: 8 })
-    .withMessage('Currency must be at most 8 characters'),
+    .withMessage(msg('error.currencyMax')),
+
+  body('language').optional().trim().isIn(['en', 'fr']).withMessage(msg('error.languageInvalid')),
 ];

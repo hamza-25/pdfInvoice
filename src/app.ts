@@ -6,6 +6,8 @@ import { randomUUID } from 'crypto';
 import { logger } from './logger';
 import invoiceRoutes from './routes/invoiceRoute';
 import { errorHandler } from './middleware/errorHandler';
+import { en } from './locales/en';
+import { fr } from './locales/fr';
 
 const app = express();
 
@@ -83,6 +85,13 @@ app.use('/pdf', pdfLimiter);
 // Liveness probe for the orchestrator (excluded from access logs above).
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({ status: 'ok', uptime: process.uptime() });
+});
+
+// Translations for the browser: the very same dictionaries the server uses
+// for the PDFs. Served as a script so the page can switch language without
+// a round-trip (chunk 5.3).
+app.get('/i18n.js', (_req: Request, res: Response) => {
+  res.type('application/javascript').send(`window.I18N = ${JSON.stringify({ en, fr })};`);
 });
 
 app.get('/', (_req: Request, res: Response) => {

@@ -33,4 +33,6 @@ export interface invoiceData {
   subtotal?: number;
   total?: number;
   currency?: string;
+  /** UI/PDF language: 'en' (default) or 'fr'. */
+  language?: string;
 }

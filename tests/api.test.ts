@@ -43,11 +43,25 @@ const validPayload = {
 };
 
 describe('GET /', () => {
-  it('renders the invoice form', async () => {
+  it('renders the invoice form with the language switcher', async () => {
     const res = await request(app).get('/');
     expect(res.status).toBe(200);
     expect(res.text).toContain('Professional Document Builder');
     expect(res.text).toContain('id="invoice-form"');
+    expect(res.text).toContain('src="/i18n.js"'); // dictionaries loaded as a script
+    expect(res.text).toContain('data-lang="fr"'); // EN|FR switcher present
+  });
+});
+
+describe('GET /i18n.js (chunk 5.3)', () => {
+  it('serves both dictionaries as a script the browser can load', async () => {
+    const res = await request(app).get('/i18n.js');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain('javascript');
+    expect(res.text).toContain('window.I18N');
+    expect(res.text).toContain('"ui.submit"');
+    expect(res.text).toContain('Générer le document'); // FR UI
+    expect(res.text).toContain('Submit for Processing'); // EN UI
   });
 });
 
@@ -378,23 +392,113 @@ describe('POST /pdf/invoice-generate — locale-aware money & dates (chunk 4.6)'
     const text = extractPdfText(res.body);
     expect(text).toContain('1,234 ¥'); // line amount
     expect(text).toContain('1,357 ¥'); // 1234 * 1.1 = 1357.4 -> whole yen
-    expect(text).toContain('2026/01/01'); // date degraded to encodable short form
-    expect(text).not.toContain('年'); // never CJK glyphs the PDF fonts can't encode
+    expect(text).toContain('January 1, 2026'); // dates follow language (en default)
   });
 
-  it('formats the header date per locale', async () => {
-    const usd = await postInvoice(validPayload);
-    expect(usd.status).toBe(200);
-    expect(extractPdfText(usd.body)).toContain('January 1, 2026');
+  it('formats the header date per document language (chunk 5.2)', async () => {
+    const en = await postInvoice(validPayload);
+    expect(en.status).toBe(200);
+    expect(extractPdfText(en.body)).toContain('January 1, 2026');
 
-    const eur = await postInvoice({ ...validPayload, currency: 'EUR' });
-    expect(eur.status).toBe(200);
-    expect(extractPdfText(eur.body)).toContain('1. Januar 2026');
+    const fr = await postInvoice({ ...validPayload, currency: 'EUR', language: 'fr' });
+    expect(fr.status).toBe(200);
+    expect(extractPdfText(fr.body)).toContain('1 janvier 2026'); // fr-FR long date
   });
 
   it('still accepts legacy symbol payloads (backward compatibility)', async () => {
     const res = await postInvoice({ ...validPayload, currency: '$' });
     expect(res.status).toBe(200);
     expect(extractPdfText(res.body)).toContain('22.00 $');
+  });
+});
+
+describe('language field (chunk 5.1)', () => {
+  it('accepts en, fr, or omission (defaults to en)', async () => {
+    expect((await postInvoice({ ...validPayload, language: 'fr' })).status).toBe(200);
+    expect((await postInvoice({ ...validPayload, language: 'en' })).status).toBe(200);
+    expect((await postInvoice(validPayload)).status).toBe(200);
+  });
+
+  it('rejects unsupported languages with a 400', async () => {
+    const res = await postInvoiceJson({ ...validPayload, language: 'de' });
+    expect(res.status).toBe(400);
+    expect(Array.isArray(res.body.errors)).toBe(true);
+    const messages = res.body.errors.map((e: { msg: string }) => e.msg);
+    expect(messages).toContain('Language must be "en" or "fr"');
+  });
+});
+
+describe('POST /pdf/invoice-generate — French validation errors (chunk 5.4)', () => {
+  it('translates validation messages when language=fr', async () => {
+    const res = await postInvoiceJson({ company: {}, client: {}, items: [{}], language: 'fr' });
+    expect(res.status).toBe(400);
+
+    const messages = res.body.errors.map((e: { msg: string }) => e.msg);
+    expect(messages).toContain('Le type de document est requis');
+    expect(messages).toContain('Le nom de la société est requis');
+    expect(messages).toContain('Le nom du client est requis');
+    expect(messages).toContain("La date d'émission est requise");
+    expect(messages).toContain('La devise est requise');
+    expect(messages).toContain("La description de l'article est requise");
+    // no English leakage
+    expect(messages.join(' ')).not.toContain('is required');
+    expect(messages.join(' ')).not.toContain('must be');
+  });
+
+  it('keeps English messages when no language is sent', async () => {
+    const res = await postInvoiceJson({ company: {}, client: {}, items: [{}] });
+    expect(res.status).toBe(400);
+
+    const messages = res.body.errors.map((e: { msg: string }) => e.msg);
+    expect(messages).toContain('Document type is required');
+    expect(messages).toContain('Company name is required');
+  });
+});
+
+describe('POST /pdf/invoice-generate — French PDF (chunk 5.2)', () => {
+  it('renders the whole invoice in French when language=fr', async () => {
+    const res = await postInvoice({ ...validPayload, language: 'fr' });
+    expect(res.status).toBe(200);
+
+    const text = extractPdfText(res.body);
+    expect(text).toContain('FACTURE'); // title
+    expect(text).toContain('FACTURE #'); // document number label
+    expect(text).toContain('FACTURER À');
+    expect(text).toContain('Quantité');
+    expect(text).toContain('MONTANT');
+    expect(text).toContain('Taxe (10%)');
+    expect(text).toContain('Merci pour votre affaire !');
+    expect(text).toContain('Si vous avez des questions'); // contact note
+    expect(text).toContain('Page 1 sur 1');
+    expect(text).toContain('1 janvier 2026'); // fr-FR long date
+
+    // English counterparts must not leak through
+    expect(text).not.toContain('BILL TO');
+    expect(text).not.toContain('Quantity');
+    expect(text).not.toContain('Thank you for your business');
+  });
+
+  it('renders a French RECEIPT and QUOTE with translated labels', async () => {
+    const receipt = await postInvoice({
+      ...validPayload,
+      documentType: 'RECEIPT',
+      language: 'fr',
+    });
+    expect(receipt.status).toBe(200);
+    const receiptText = extractPdfText(receipt.body);
+    expect(receiptText).toContain('REÇU');
+    expect(receiptText).toContain('REÇU LE'); // "PAID ON" in French
+
+    const quote = await postInvoice({
+      ...validPayload,
+      documentType: 'QUOTE',
+      dueDate: '2026-02-15',
+      language: 'fr',
+    });
+    expect(quote.status).toBe(200);
+    const quoteText = extractPdfText(quote.body);
+    expect(quoteText).toContain('DEVIS');
+    expect(quoteText).toContain("VALIDE JUSQU'AU");
+    expect(quoteText).toContain('15 février 2026'); // dueDate in French
   });
 });

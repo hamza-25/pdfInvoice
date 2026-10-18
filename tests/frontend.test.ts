@@ -3,6 +3,8 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { JSDOM } from 'jsdom';
+import { en } from '../src/locales/en';
+import { fr } from '../src/locales/fr';
 
 const html = fs.readFileSync(path.resolve(process.cwd(), 'views/index.ejs'), 'utf8');
 
@@ -23,6 +25,10 @@ interface Harness {
 interface BootOptions {
   /** Make window.open return null, as browsers do for blocked popups. */
   popupBlocked?: boolean;
+  /** Seed the persisted language before the page script runs. */
+  lang?: 'en' | 'fr';
+  /** Simulate /i18n.js failing to load — the page must fall back to English. */
+  withoutI18N?: boolean;
 }
 
 /**
@@ -38,6 +44,14 @@ function boot(fetchImpl?: MockHandler, options: BootOptions = {}): Promise<Harne
       runScripts: 'dangerously',
       url: 'http://localhost/',
       beforeParse(window) {
+        // The real dictionaries, as served by GET /i18n.js in production.
+        if (!options.withoutI18N) {
+          (window as unknown as { I18N: unknown }).I18N = { en, fr };
+        }
+        if (options.lang) {
+          window.localStorage.setItem('pdfinvoice-lang', options.lang);
+        }
+
         // Don't actually try to navigate on download; count the clicks instead.
         window.HTMLAnchorElement.prototype.click = function () {
           stats.anchorClicks += 1;
@@ -207,7 +221,7 @@ describe('submit behaviour (chunks 0.2 / 0.3 / 0.7)', () => {
 
     const btn = document.getElementById('submit-btn') as HTMLButtonElement;
     expect(btn.disabled).toBe(false);
-    expect(btn.textContent).toBe('Submit for Processing');
+    expect(document.getElementById('submit-btn-label')!.textContent).toBe('Submit for Processing');
   });
 
   it('opens the PDF blob in a new tab for preview (chunk 4.4)', async () => {
@@ -327,6 +341,87 @@ describe('accessibility (chunk 4.5)', () => {
     const btn = document.getElementById('submit-btn')!;
     expect(btn.getAttribute('aria-busy')).toBe('true');
     expect(btn.disabled).toBe(true);
+  });
+});
+
+describe('language switcher (chunk 5.3)', () => {
+  const clickLang = (window: JSDOM['window'], document: Document, lang: string) => {
+    const btn = document.querySelector(`.lang-btn[data-lang="${lang}"]`) as HTMLElement;
+    btn.dispatchEvent(new window.Event('click', { bubbles: true }));
+  };
+
+  it('translates the form UI when toggling to FR and back', async () => {
+    const { window, document } = await boot();
+    expect(document.querySelector('h1')!.textContent).toBe('Professional Document Builder');
+
+    clickLang(window, document, 'fr');
+    expect(document.querySelector('h1')!.textContent).toBe('Créateur de documents professionnels');
+    expect(document.getElementById('submit-btn-label')!.textContent).toBe('Générer le document');
+    expect(document.querySelector('label[for="currency"]')!.textContent).toBe('Devise');
+    expect(document.documentElement.lang).toBe('fr');
+    expect(document.querySelector('.lang-btn[data-lang="fr"]')!.getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    expect(document.querySelector('.lang-btn[data-lang="en"]')!.getAttribute('aria-pressed')).toBe(
+      'false',
+    );
+
+    clickLang(window, document, 'en');
+    expect(document.querySelector('h1')!.textContent).toBe('Professional Document Builder');
+    expect(document.documentElement.lang).toBe('en');
+  });
+
+  it('translates placeholders and dynamic item rows', async () => {
+    const { document } = await boot(undefined, { lang: 'fr' });
+
+    const nameInput = document.getElementById('company-name') as HTMLInputElement;
+    expect(nameInput.placeholder).toBe('Nom de votre entreprise');
+
+    const row = document.querySelector('.item-row')!;
+    const description = row.querySelector('.description')!;
+    expect(description.getAttribute('aria-label')).toBe("Description de l'article");
+    expect(description.getAttribute('placeholder')).toBe("Description de l'article");
+    expect(row.querySelector('.remove-item-btn')!.getAttribute('aria-label')).toBe(
+      "Supprimer l'article",
+    );
+  });
+
+  it('sends the current language with the payload and remembers the choice', async () => {
+    const { window, document, calls } = await boot(undefined, { lang: 'fr' });
+
+    submit(window, document);
+    await flush();
+
+    const body = JSON.parse(calls[0].options.body!);
+    expect(body.language).toBe('fr');
+    expect(window.localStorage.getItem('pdfinvoice-lang')).toBe('fr');
+  });
+
+  it('defaults to sending language=en', async () => {
+    const { window, document, calls } = await boot();
+
+    submit(window, document);
+    await flush();
+
+    const body = JSON.parse(calls[0].options.body!);
+    expect(body.language).toBe('en');
+  });
+
+  it('restores the translated button label after a completed request', async () => {
+    const { window, document } = await boot(undefined, { lang: 'fr' });
+
+    submit(window, document);
+    await flush();
+
+    expect(document.getElementById('submit-btn-label')!.textContent).toBe('Générer le document');
+    expect(document.getElementById('submit-btn')!.hasAttribute('aria-busy')).toBe(false);
+  });
+
+  it('keeps the hardcoded English when the dictionaries are missing', async () => {
+    const { document } = await boot(undefined, { withoutI18N: true });
+
+    expect(document.querySelector('h1')!.textContent).toBe('Professional Document Builder');
+    expect(document.getElementById('submit-btn-label')!.textContent).toBe('Submit for Processing');
   });
 });
 

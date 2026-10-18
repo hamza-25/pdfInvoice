@@ -4,6 +4,7 @@ import { invoiceData, invoiceItem } from '../interfaces';
 import { validationResult } from 'express-validator';
 import { LAYOUT, documentTypeStyle } from '../services/pdfLayout';
 import { formatMoney, formatDate } from '../services/currency';
+import { t, resolveLanguage } from '../services/i18n';
 import { generateInvoiceNumber } from '../services/invoiceNumber';
 import { catchAsync } from '../utils/catchAsync';
 import { round2 } from '../utils/round2';
@@ -23,6 +24,7 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
   data.number = generateInvoiceNumber();
 
   const currency = data.currency ?? '';
+  const lang = resolveLanguage(data.language);
   const taxRate = data.taxRate ?? 0;
   const startedAt = process.hrtime.bigint();
 
@@ -39,7 +41,7 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
   const primaryDate =
     style.dateField === 'dueDate' ? data.dueDate || data.issueDate : data.issueDate;
 
-  doc.fontSize(20).fillColor(style.accent).text(style.title, 450, LAYOUT.margin);
+  doc.fontSize(20).fillColor(style.accent).text(t(style.titleKey, lang), 450, LAYOUT.margin);
 
   // Company info (top-left)
   doc
@@ -51,10 +53,10 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
 
   // Document info (top-right)
   doc
-    .text(`${style.idLabel}:`, 400, 100)
+    .text(`${t(style.idKey, lang)}:`, 400, 100)
     .text(data.number, 470, 100)
-    .text(`${style.dateLabel}:`, 400, 115)
-    .text(formatDate(primaryDate, currency), 470, 115);
+    .text(`${t(style.dateKey, lang)}:`, 400, 115)
+    .text(formatDate(primaryDate, lang), 470, 115);
 
   // Accent rule under the header
   doc
@@ -72,7 +74,7 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
     .fill('#e0e0e0')
     .stroke()
     .fillColor('black')
-    .text('BILL TO', 55, 145);
+    .text(t('pdf.billTo', lang), 55, 145);
 
   doc
     .fillColor('black')
@@ -93,9 +95,9 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
     doc
       .font('Helvetica')
       .fontSize(10)
-      .text('DESCRIPTION', LAYOUT.columns.description.x, labelY)
-      .text('Quantity', LAYOUT.columns.quantity.x, labelY)
-      .text('AMOUNT', LAYOUT.columns.amount.x, labelY);
+      .text(t('pdf.column.description', lang), LAYOUT.columns.description.x, labelY)
+      .text(t('pdf.column.quantity', lang), LAYOUT.columns.quantity.x, labelY)
+      .text(t('pdf.column.amount', lang), LAYOUT.columns.amount.x, labelY);
 
     const lineY = y + 20;
     doc.moveTo(LAYOUT.margin, lineY).lineTo(contentRight, lineY).stroke();
@@ -112,7 +114,7 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
       .fontSize(9)
       .fillColor('black')
       .text(data.company.name, LAYOUT.margin, LAYOUT.margin, { width: 250, ellipsis: true })
-      .text(`${style.title} ${data.number}`, contentRight - 200, LAYOUT.margin, {
+      .text(`${t(style.titleKey, lang)} ${data.number}`, contentRight - 200, LAYOUT.margin, {
         width: 200,
         align: 'right',
       });
@@ -171,7 +173,7 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
   cursorY = ensureSpace(cursorY, LAYOUT.totals.height);
 
   doc
-    .text(`Tax (${taxRate}%)`, LAYOUT.columns.description.x, cursorY)
+    .text(`${t('pdf.tax', lang)} (${taxRate}%)`, LAYOUT.columns.description.x, cursorY)
     .text(formatMoney(taxValue, currency), LAYOUT.columns.amount.x, cursorY);
 
   cursorY += LAYOUT.totals.lineGap;
@@ -180,7 +182,7 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
   cursorY += LAYOUT.totals.lineGap;
   doc
     .font('Helvetica-Bold')
-    .text('TOTAL', 400, cursorY)
+    .text(t('pdf.total', lang), 400, cursorY)
     .text(formatMoney(grandTotal, currency), LAYOUT.columns.amount.x, cursorY);
 
   // ---- Footer ----
@@ -189,13 +191,9 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
   doc
     .font('Helvetica')
     .fontSize(10)
-    .text('Thank you for your business!', LAYOUT.margin, cursorY)
+    .text(t('pdf.thanks', lang), LAYOUT.margin, cursorY)
     .fontSize(8)
-    .text(
-      'If you have any questions about this invoice, please contact Us',
-      LAYOUT.margin,
-      cursorY + 40,
-    )
+    .text(t('pdf.contactNote', lang), LAYOUT.margin, cursorY + 40)
     .text(
       `[${data.company.name}, ${data.company.phone ?? ''}, ${data.company.email ?? ''}]`,
       LAYOUT.margin,
@@ -217,7 +215,7 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
       .fontSize(8)
       .fillColor('black')
       .text(
-        `Page ${i - range.start + 1} of ${range.count}`,
+        t('pdf.pageOf', lang, { current: i - range.start + 1, total: range.count }),
         LAYOUT.margin,
         doc.page.height - LAYOUT.footer.fromBottom,
         { width: contentRight - LAYOUT.margin, align: 'center' },
