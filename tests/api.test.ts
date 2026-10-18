@@ -398,3 +398,19 @@ describe('POST /pdf/invoice-generate — locale-aware money & dates (chunk 4.6)'
     expect(extractPdfText(res.body)).toContain('22.00 $');
   });
 });
+
+describe('language field (chunk 5.1)', () => {
+  it('accepts en, fr, or omission (defaults to en)', async () => {
+    expect((await postInvoice({ ...validPayload, language: 'fr' })).status).toBe(200);
+    expect((await postInvoice({ ...validPayload, language: 'en' })).status).toBe(200);
+    expect((await postInvoice(validPayload)).status).toBe(200);
+  });
+
+  it('rejects unsupported languages with a 400', async () => {
+    const res = await postInvoiceJson({ ...validPayload, language: 'de' });
+    expect(res.status).toBe(400);
+    expect(Array.isArray(res.body.errors)).toBe(true);
+    const messages = res.body.errors.map((e: { msg: string }) => e.msg);
+    expect(messages).toContain('Language must be "en" or "fr"');
+  });
+});

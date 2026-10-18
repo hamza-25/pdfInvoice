@@ -127,4 +127,10 @@ export const pdfInputValidations = [
     .withMessage('Currency is required')
     .isLength({ max: 8 })
     .withMessage('Currency must be at most 8 characters'),
+
+  body('language')
+    .optional()
+    .trim()
+    .isIn(['en', 'fr'])
+    .withMessage('Language must be "en" or "fr"'),
 ];
