@@ -98,6 +98,37 @@ export interface Dictionary {
   'ui.toastDownloaded': string;
   'ui.errorGeneric': string;
   'ui.errorMore': string; // {count} placeholder
+
+  // ---- API validation errors (chunk 5.4) ----
+  'error.documentTypeRequired': string;
+  'error.documentTypeMax': string;
+  'error.companyObject': string;
+  'error.companyNameRequired': string;
+  'error.companyNameMax': string;
+  'error.companyAddressMax': string;
+  'error.companyEmail': string;
+  'error.companyPhoneMax': string;
+  'error.companyCityMax': string;
+  'error.clientObject': string;
+  'error.clientNameRequired': string;
+  'error.clientNameMax': string;
+  'error.clientAddressMax': string;
+  'error.clientEmail': string;
+  'error.clientPhoneMax': string;
+  'error.clientCityMax': string;
+  'error.issueDateRequired': string;
+  'error.dueDateMax': string;
+  'error.itemsArray': string;
+  'error.itemDescriptionRequired': string;
+  'error.itemDescriptionMax': string;
+  'error.itemPriceNumber': string;
+  'error.itemQuantityNumber': string;
+  'error.paymentTypeMax': string;
+  'error.notesMax': string;
+  'error.taxRateNumber': string;
+  'error.currencyRequired': string;
+  'error.currencyMax': string;
+  'error.languageInvalid': string;
 }
 
 /** Every valid translation key. */
@@ -189,4 +220,35 @@ export const en: Dictionary = {
   'ui.toastDownloaded': 'Invoice generated successfully',
   'ui.errorGeneric': 'Something went wrong, please try again.',
   'ui.errorMore': '…and {count} more',
+
+  // API validation errors
+  'error.documentTypeRequired': 'Document type is required',
+  'error.documentTypeMax': 'Document type must be at most 60 characters',
+  'error.companyObject': 'Company must be an object',
+  'error.companyNameRequired': 'Company name is required',
+  'error.companyNameMax': 'Company name must be at most 200 characters',
+  'error.companyAddressMax': 'Company address must be at most 300 characters',
+  'error.companyEmail': 'Company email must be a valid email address',
+  'error.companyPhoneMax': 'Company phone must be at most 50 characters',
+  'error.companyCityMax': 'Company city must be at most 100 characters',
+  'error.clientObject': 'Client must be an object',
+  'error.clientNameRequired': 'Client name is required',
+  'error.clientNameMax': 'Client name must be at most 200 characters',
+  'error.clientAddressMax': 'Client address must be at most 300 characters',
+  'error.clientEmail': 'Client email must be a valid email address',
+  'error.clientPhoneMax': 'Client phone must be at most 50 characters',
+  'error.clientCityMax': 'Client city must be at most 100 characters',
+  'error.issueDateRequired': 'Issue date is required',
+  'error.dueDateMax': 'Due date must be at most 60 characters',
+  'error.itemsArray': 'Items must be an array with at most 15 entries',
+  'error.itemDescriptionRequired': 'Item description is required',
+  'error.itemDescriptionMax': 'Item description must be at most 1000 characters',
+  'error.itemPriceNumber': 'Item price must be a number',
+  'error.itemQuantityNumber': 'Item quantity must be a number',
+  'error.paymentTypeMax': 'Payment type must be at most 100 characters',
+  'error.notesMax': 'Notes must be at most 2000 characters',
+  'error.taxRateNumber': 'Tax rate must be a number',
+  'error.currencyRequired': 'Currency is required',
+  'error.currencyMax': 'Currency must be at most 8 characters',
+  'error.languageInvalid': 'Language must be "en" or "fr"',
 };

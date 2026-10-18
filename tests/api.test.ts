@@ -428,6 +428,33 @@ describe('language field (chunk 5.1)', () => {
   });
 });
 
+describe('POST /pdf/invoice-generate — French validation errors (chunk 5.4)', () => {
+  it('translates validation messages when language=fr', async () => {
+    const res = await postInvoiceJson({ company: {}, client: {}, items: [{}], language: 'fr' });
+    expect(res.status).toBe(400);
+
+    const messages = res.body.errors.map((e: { msg: string }) => e.msg);
+    expect(messages).toContain('Le type de document est requis');
+    expect(messages).toContain('Le nom de la société est requis');
+    expect(messages).toContain('Le nom du client est requis');
+    expect(messages).toContain("La date d'émission est requise");
+    expect(messages).toContain('La devise est requise');
+    expect(messages).toContain("La description de l'article est requise");
+    // no English leakage
+    expect(messages.join(' ')).not.toContain('is required');
+    expect(messages.join(' ')).not.toContain('must be');
+  });
+
+  it('keeps English messages when no language is sent', async () => {
+    const res = await postInvoiceJson({ company: {}, client: {}, items: [{}] });
+    expect(res.status).toBe(400);
+
+    const messages = res.body.errors.map((e: { msg: string }) => e.msg);
+    expect(messages).toContain('Document type is required');
+    expect(messages).toContain('Company name is required');
+  });
+});
+
 describe('POST /pdf/invoice-generate — French PDF (chunk 5.2)', () => {
   it('renders the whole invoice in French when language=fr', async () => {
     const res = await postInvoice({ ...validPayload, language: 'fr' });

@@ -1,6 +1,8 @@
 import { en, type Dictionary, type TranslationKey } from '../locales/en';
 import { fr } from '../locales/fr';
 
+export type { TranslationKey } from '../locales/en';
+
 /** Languages the app can render, in UI order. */
 export const SUPPORTED_LANGUAGES = ['en', 'fr'] as const;
 
