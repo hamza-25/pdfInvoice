@@ -57,8 +57,8 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
 
   // Accent rule under the header
   doc
-    .moveTo(LAYOUT.margin, 85)
-    .lineTo(contentRight, 85)
+    .moveTo(LAYOUT.margin, 90)
+    .lineTo(contentRight, 90)
     .lineWidth(2)
     .strokeColor(style.accent)
     .stroke()
