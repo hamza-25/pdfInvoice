@@ -3,8 +3,8 @@ name: Render ping every 14 minutes
 
 on:
   schedule:
-    - cron: '*/14 * * * *'  # Runs every 14 minutes (UTC)
-  workflow_dispatch:  # Allows manual triggering
+    - cron: '*/14 * * * *' # Runs every 14 minutes (UTC)
+  workflow_dispatch: # Allows manual triggering
 
 jobs:
   curl-website:

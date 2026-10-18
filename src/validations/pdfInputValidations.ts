@@ -6,14 +6,22 @@ export const pdfInputValidations = [
   body('company').isObject().withMessage('Company must be an object'),
   body('company.name').trim().notEmpty().withMessage('Company name is required').escape(),
   body('company.address').optional().trim().escape(),
-  body('company.email').optional({ values: 'falsy' }).isEmail().withMessage('Company email must be a valid email address').normalizeEmail(),
+  body('company.email')
+    .optional({ values: 'falsy' })
+    .isEmail()
+    .withMessage('Company email must be a valid email address')
+    .normalizeEmail(),
   body('company.phone').optional().trim().escape(),
   body('company.city').optional().trim().escape(),
 
   body('client').isObject().withMessage('Client must be an object'),
   body('client.name').trim().notEmpty().withMessage('Client name is required').escape(),
   body('client.address').optional().trim().escape(),
-  body('client.email').optional({ values: 'falsy' }).isEmail().withMessage('Client email must be a valid email address').normalizeEmail(),
+  body('client.email')
+    .optional({ values: 'falsy' })
+    .isEmail()
+    .withMessage('Client email must be a valid email address')
+    .normalizeEmail(),
   body('client.phone').optional().trim().escape(),
   body('client.city').optional().trim().escape(),
 
@@ -23,7 +31,11 @@ export const pdfInputValidations = [
 
   body('items').isArray({ max: 15 }).withMessage('Items must be an array with at most 15 entries'),
 
-  body('items.*.description').trim().notEmpty().withMessage('Item description is required').escape(),
+  body('items.*.description')
+    .trim()
+    .notEmpty()
+    .withMessage('Item description is required')
+    .escape(),
   body('items.*.price').isNumeric().withMessage('Item price must be a number'),
   body('items.*.quantity').isNumeric().withMessage('Item quantity must be a number'),
 

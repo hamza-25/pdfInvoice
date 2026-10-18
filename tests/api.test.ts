@@ -4,7 +4,10 @@ import type { Response as SuperAgentResponse } from 'superagent';
 import app from '../src/app';
 import { extractPdfText, isPdf, countPdfPages } from './helpers/pdf';
 /** Collect the raw response body as a Buffer (the response is a PDF). */
-const binaryParser = (res: NodeJS.ReadableStream, callback: (err: Error | null, body: Buffer) => void) => {
+const binaryParser = (
+  res: NodeJS.ReadableStream,
+  callback: (err: Error | null, body: Buffer) => void,
+) => {
   const chunks: Buffer[] = [];
   res.on('data', (chunk: Buffer) => chunks.push(chunk));
   res.on('end', () => callback(null, Buffer.concat(chunks)));
@@ -15,11 +18,18 @@ const postInvoice = (payload: unknown) =>
     .post('/pdf/invoice-generate')
     .send(payload as object)
     .buffer(true)
-    .parse(binaryParser as unknown as (res: SuperAgentResponse, cb: (err: Error | null, body: unknown) => void) => void);
+    .parse(
+      binaryParser as unknown as (
+        res: SuperAgentResponse,
+        cb: (err: Error | null, body: unknown) => void,
+      ) => void,
+    );
 
 /** Same endpoint, but let supertest parse the JSON body (for 400 responses). */
 const postInvoiceJson = (payload: unknown) =>
-  request(app).post('/pdf/invoice-generate').send(payload as object);
+  request(app)
+    .post('/pdf/invoice-generate')
+    .send(payload as object);
 
 /** Minimal payload that satisfies every required validation rule. */
 const validPayload = {
@@ -159,7 +169,11 @@ describe('POST /pdf/invoice-generate — validation errors', () => {
 
 describe('POST /pdf/invoice-generate — item limit (chunk 1.1)', () => {
   const makeItems = (n: number) =>
-    Array.from({ length: n }, (_, i) => ({ description: `Item ${i + 1}`, quantity: 1, price: i + 1 }));
+    Array.from({ length: n }, (_, i) => ({
+      description: `Item ${i + 1}`,
+      quantity: 1,
+      price: i + 1,
+    }));
 
   it('accepts exactly 15 items', async () => {
     const res = await postInvoice({ ...validPayload, items: makeItems(15) });
@@ -177,12 +191,18 @@ describe('POST /pdf/invoice-generate — item limit (chunk 1.1)', () => {
 
 describe('POST /pdf/invoice-generate — dynamic layout (chunk 1.3)', () => {
   const makeItems = (n: number, description = (i: number) => `Line item ${i + 1}`) =>
-    Array.from({ length: n }, (_, i) => ({ description: description(i), quantity: 1, price: i + 1 }));
+    Array.from({ length: n }, (_, i) => ({
+      description: description(i),
+      quantity: 1,
+      price: i + 1,
+    }));
 
   it('paginates when wrapped rows overflow one page (15 items, multi-line)', async () => {
     const rows = makeItems(
       15,
-      (i) => `ITEM_${String(i + 1).padStart(2, '0')} ` + 'lorem ipsum dolor sit amet consectetur adipiscing elit '.repeat(6)
+      (i) =>
+        `ITEM_${String(i + 1).padStart(2, '0')} ` +
+        'lorem ipsum dolor sit amet consectetur adipiscing elit '.repeat(6),
     );
     const res = await postInvoice({ ...validPayload, items: rows });
     expect(res.status).toBe(200);

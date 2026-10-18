@@ -146,9 +146,16 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
     .fontSize(10)
     .text('Thank you for your business!', LAYOUT.margin, cursorY)
     .fontSize(8)
-    .text('If you have any questions about this invoice, please contact Us', LAYOUT.margin, cursorY + 40)
-    .text(`[${data.company.name}, ${data.company.phone ?? ''}, ${data.company.email ?? ''}]`, LAYOUT.margin, cursorY + 50);
+    .text(
+      'If you have any questions about this invoice, please contact Us',
+      LAYOUT.margin,
+      cursorY + 40,
+    )
+    .text(
+      `[${data.company.name}, ${data.company.phone ?? ''}, ${data.company.email ?? ''}]`,
+      LAYOUT.margin,
+      cursorY + 50,
+    );
 
   doc.end();
 });
-

@@ -29,7 +29,8 @@ function boot(fetchImpl?: MockHandler): Promise<Harness> {
       beforeParse(window) {
         // Don't actually try to navigate on download.
         window.HTMLAnchorElement.prototype.click = function () {};
-        (window.URL as unknown as { createObjectURL: () => string }).createObjectURL = () => 'blob:mock';
+        (window.URL as unknown as { createObjectURL: () => string }).createObjectURL = () =>
+          'blob:mock';
         (window.URL as unknown as { revokeObjectURL: () => void }).revokeObjectURL = () => {};
 
         window.fetch = ((url: string, options: FetchCall['options']) => {
@@ -67,7 +68,7 @@ const setItem = (
   document: Document,
   quantity: string,
   price: string,
-  taxRate = '0'
+  taxRate = '0',
 ) => {
   const row = document.querySelector('.item-row') as HTMLElement;
   const qty = row.querySelector('.quantity') as HTMLInputElement;
@@ -124,12 +125,12 @@ describe('item rows', () => {
   it('adds and removes rows', async () => {
     const { window, document } = await boot();
     (document.getElementById('add-item-btn') as HTMLElement).dispatchEvent(
-      new window.Event('click', { bubbles: true })
+      new window.Event('click', { bubbles: true }),
     );
     expect(document.querySelectorAll('.item-row').length).toBe(2);
 
     (document.querySelector('.remove-item-btn') as HTMLElement).dispatchEvent(
-      new window.Event('click', { bubbles: true })
+      new window.Event('click', { bubbles: true }),
     );
     expect(document.querySelectorAll('.item-row').length).toBe(1);
   });
@@ -180,8 +181,9 @@ describe('submit behaviour (chunks 0.2 / 0.3 / 0.7)', () => {
       Promise.resolve({
         ok: false,
         status: 400,
-        json: () => Promise.resolve({ errors: [{ path: 'company.name', msg: 'Company name is required' }] }),
-      })
+        json: () =>
+          Promise.resolve({ errors: [{ path: 'company.name', msg: 'Company name is required' }] }),
+      }),
     );
 
     submit(window, document);
@@ -201,7 +203,9 @@ describe('submit behaviour (chunks 0.2 / 0.3 / 0.7)', () => {
     submit(window, document);
     await flush();
 
-    expect(document.getElementById('notification-toast-error')!.textContent).toContain('Failed to fetch');
+    expect(document.getElementById('notification-toast-error')!.textContent).toContain(
+      'Failed to fetch',
+    );
     const btn = document.getElementById('submit-btn') as HTMLButtonElement;
     expect(btn.disabled).toBe(false);
   });
@@ -223,7 +227,7 @@ describe('item limit (chunk 1.1)', () => {
 
     // removing a row re-enables the button and hides the hint
     (document.querySelector('.remove-item-btn') as HTMLElement).dispatchEvent(
-      new window.Event('click', { bubbles: true })
+      new window.Event('click', { bubbles: true }),
     );
     expect(document.querySelectorAll('.item-row').length).toBe(14);
     expect(addBtn.disabled).toBe(false);

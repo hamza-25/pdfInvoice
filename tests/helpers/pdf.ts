@@ -23,7 +23,7 @@ export function extractPdfText(pdf: Buffer): string {
   }
 
   const tokens = [...content.matchAll(/<([0-9A-Fa-f]+)>/g)].map((m) =>
-    Buffer.from(m[1], 'hex').toString('latin1')
+    Buffer.from(m[1], 'hex').toString('latin1'),
   );
   return tokens.join('');
 }

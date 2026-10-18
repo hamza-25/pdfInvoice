@@ -25,7 +25,7 @@ describe('async error wrapper (chunk 1.5)', () => {
     const app = buildApp(
       catchAsync(async () => {
         throw new Error('kaboom');
-      })
+      }),
     );
 
     const res = await request(app).get('/boom');
@@ -48,7 +48,7 @@ describe('async error wrapper (chunk 1.5)', () => {
     const app = buildApp(
       catchAsync(async (_req, res) => {
         res.json({ ok: true });
-      })
+      }),
     );
 
     const res = await request(app).get('/boom');

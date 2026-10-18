@@ -5,19 +5,19 @@ export interface invoiceItem {
 }
 
 export interface companyData {
-  name:string;
+  name: string;
   address?: string;
-  city?: string; 
+  city?: string;
   phone?: string;
   email?: string;
 }
 
 export interface clientData {
-   name: string;
-   address?: string;
-   city?: string;
-   phone?: string;
-   email?: string 
+  name: string;
+  address?: string;
+  city?: string;
+  phone?: string;
+  email?: string;
 }
 export interface invoiceData {
   documentType: string;

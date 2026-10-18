@@ -18,18 +18,18 @@ cp .env.example .env   # optional; defaults are used if absent
 
 ## Scripts
 
-| Script | Description |
-|--------|-------------|
-| `npm run dev` | Start with nodemon + ts-node (auto-reload) |
-| `npm run build` | Compile TypeScript `src/` → `dist/` |
-| `npm start` | Run the compiled server (`node dist/index.js`) |
-| `npm test` | Run the test suite |
+| Script          | Description                                    |
+| --------------- | ---------------------------------------------- |
+| `npm run dev`   | Start with nodemon + ts-node (auto-reload)     |
+| `npm run build` | Compile TypeScript `src/` → `dist/`            |
+| `npm start`     | Run the compiled server (`node dist/index.js`) |
+| `npm test`      | Run the test suite                             |
 
 ## Environment variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `8000` | HTTP port the server listens on |
+| Variable | Default            | Description                       |
+| -------- | ------------------ | --------------------------------- |
+| `PORT`   | `8000`             | HTTP port the server listens on   |
 | `DOMAIN` | `http://localhost` | Base URL shown in the startup log |
 
 See [`.env.example`](.env.example).
@@ -37,9 +37,11 @@ See [`.env.example`](.env.example).
 ## API
 
 ### `GET /`
+
 Renders the invoice form.
 
 ### `POST /pdf/invoice-generate`
+
 Accepts a JSON body and responds with a PDF (`Content-Type: application/pdf`).
 
 Example body:
@@ -47,8 +49,20 @@ Example body:
 ```json
 {
   "documentType": "SERVICE INVOICE",
-  "company": { "name": "Acme", "address": "1 Main St", "city": "NY", "phone": "123", "email": "a@b.com" },
-  "client": { "name": "Bob", "address": "2 Oak St", "city": "LA", "phone": "456", "email": "c@d.com" },
+  "company": {
+    "name": "Acme",
+    "address": "1 Main St",
+    "city": "NY",
+    "phone": "123",
+    "email": "a@b.com"
+  },
+  "client": {
+    "name": "Bob",
+    "address": "2 Oak St",
+    "city": "LA",
+    "phone": "456",
+    "email": "c@d.com"
+  },
   "issueDate": "2026-01-01",
   "dueDate": "2026-01-31",
   "items": [{ "description": "Widget", "quantity": 2, "price": 10 }],
