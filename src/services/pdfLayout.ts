@@ -52,16 +52,18 @@ export const LAYOUT = {
   },
 } as const;
 
+import type { TranslationKey } from '../locales/en';
+
 /** How a document type is presented in the PDF header. */
 export interface DocumentTypeStyle {
-  /** Big title in the top-right corner. */
-  title: string;
+  /** Translation key of the big title in the top-right corner. */
+  titleKey: TranslationKey;
   /** Accent color for the title and the underline rule. */
   accent: string;
-  /** Label in front of the document number (e.g. "INVOICE #"). */
-  idLabel: string;
-  /** Label in front of the primary date. */
-  dateLabel: string;
+  /** Translation key of the label in front of the document number. */
+  idKey: TranslationKey;
+  /** Translation key of the label in front of the primary date. */
+  dateKey: TranslationKey;
   /** Payload field holding the primary date value. */
   dateField: 'issueDate' | 'dueDate';
 }
@@ -69,34 +71,36 @@ export interface DocumentTypeStyle {
 /**
  * Presentation per document type. Keys are the exact `documentType` values
  * the form sends; anything unknown falls back to the invoice style.
+ * Text is stored as translation keys — `t(key, language)` resolves it at
+ * render time (chunk 5.2).
  */
 export const DOCUMENT_TYPES: Record<string, DocumentTypeStyle> = {
   'SERVICE INVOICE': {
-    title: 'INVOICE',
+    titleKey: 'pdf.invoice.title',
     accent: '#2563eb',
-    idLabel: 'INVOICE #',
-    dateLabel: 'DATE',
+    idKey: 'pdf.invoice.idLabel',
+    dateKey: 'pdf.date.invoice',
     dateField: 'issueDate',
   },
   'PRODUCT INVOICE': {
-    title: 'INVOICE',
+    titleKey: 'pdf.invoice.title',
     accent: '#2563eb',
-    idLabel: 'INVOICE #',
-    dateLabel: 'DATE',
+    idKey: 'pdf.invoice.idLabel',
+    dateKey: 'pdf.date.invoice',
     dateField: 'issueDate',
   },
   QUOTE: {
-    title: 'QUOTE',
+    titleKey: 'pdf.quote.title',
     accent: '#d97706',
-    idLabel: 'QUOTE #',
-    dateLabel: 'VALID UNTIL',
+    idKey: 'pdf.quote.idLabel',
+    dateKey: 'pdf.date.quote',
     dateField: 'dueDate',
   },
   RECEIPT: {
-    title: 'RECEIPT',
+    titleKey: 'pdf.receipt.title',
     accent: '#059669',
-    idLabel: 'RECEIPT #',
-    dateLabel: 'PAID ON',
+    idKey: 'pdf.receipt.idLabel',
+    dateKey: 'pdf.date.receipt',
     dateField: 'issueDate',
   },
 };
