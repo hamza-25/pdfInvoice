@@ -33,6 +33,9 @@ cp .env.example .env   # optional; defaults are used if absent
 > The page stylesheet is **compiled**, not loaded from a CDN: run `npm run build` (or `npm run build:css`)
 > before `npm start`, otherwise the CSS 404s. `public/css/` is generated and not tracked in git.
 
+> **Mobile**: below 768px the item editor becomes stacked, labeled blocks (no horizontal scroll),
+> and the submit button lives in a sticky bottom action bar carrying the running total.
+
 ## Environment variables
 
 | Variable    | Default            | Description                                    |

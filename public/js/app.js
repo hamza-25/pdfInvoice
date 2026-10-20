@@ -55,6 +55,11 @@
       var text = tUi(el.getAttribute('data-i18n-aria'));
       if (text) el.setAttribute('aria-label', text);
     });
+    // Stacked mobile item cells label themselves from data-label.
+    document.querySelectorAll('[data-i18n-datalabel]').forEach(function (el) {
+      var text = tUi(el.getAttribute('data-i18n-datalabel'));
+      if (text) el.setAttribute('data-label', text);
+    });
     document.querySelectorAll('.lang-btn').forEach(function (btn) {
       btn.setAttribute('aria-pressed', String(btn.dataset.lang === lang));
     });
@@ -157,8 +162,13 @@
 
   var renderTotals = function () {
     var code = currencySelect.value;
-    document.getElementById('subtotal').textContent = formatCurrency(subtotalNumber, code);
-    document.getElementById('total-amount').textContent = formatCurrency(totalNumber, code);
+    var subtotalText = formatCurrency(subtotalNumber, code);
+    var totalText = formatCurrency(totalNumber, code);
+    document.getElementById('subtotal').textContent = subtotalText;
+    document.getElementById('total-amount').textContent = totalText;
+    // The sticky mobile action bar mirrors the total.
+    var actionTotal = document.getElementById('action-total');
+    if (actionTotal) actionTotal.textContent = totalText;
   };
 
   currencySelect.addEventListener('change', renderTotals);
@@ -178,10 +188,10 @@
     var itemRow = document.createElement('tr');
     itemRow.classList.add('item-row', 'border-b', 'border-rule');
     itemRow.innerHTML =
-      '<td class="py-2 pr-2 align-middle"><input type="text" data-i18n-ph="ui.itemDescriptionPh" placeholder="Item description" maxlength="54" data-i18n-aria="ui.itemDescriptionAria" aria-label="Item description" class="description invoice-input w-full rounded-md p-2"></td>' +
-      '<td class="py-2 px-2 align-middle"><input type="number" value="1" min="1" inputmode="decimal" data-i18n-aria="ui.itemQuantityAria" aria-label="Quantity" class="quantity invoice-input money w-full rounded-md p-2 text-center"></td>' +
-      '<td class="py-2 px-2 align-middle"><input type="number" value="0.00" min="0" step="0.01" inputmode="decimal" data-i18n-aria="ui.itemPriceAria" aria-label="Price" class="price invoice-input money w-full rounded-md p-2 text-center"></td>' +
-      '<td class="py-2 pl-2 align-middle text-center">' +
+      '<td class="py-2 pr-2 align-middle" data-i18n-datalabel="ui.tableDescription" data-label="Description"><input type="text" data-i18n-ph="ui.itemDescriptionPh" placeholder="Item description" maxlength="54" data-i18n-aria="ui.itemDescriptionAria" aria-label="Item description" class="description invoice-input w-full rounded-md p-2"></td>' +
+      '<td class="py-2 px-2 align-middle" data-i18n-datalabel="ui.tableQty" data-label="Qty"><input type="number" value="1" min="1" inputmode="decimal" data-i18n-aria="ui.itemQuantityAria" aria-label="Quantity" class="quantity invoice-input money w-full rounded-md p-2 text-center"></td>' +
+      '<td class="py-2 px-2 align-middle" data-i18n-datalabel="ui.tablePrice" data-label="Price"><input type="number" value="0.00" min="0" step="0.01" inputmode="decimal" data-i18n-aria="ui.itemPriceAria" aria-label="Price" class="price invoice-input money w-full rounded-md p-2 text-center"></td>' +
+      '<td class="py-2 pl-2 align-middle text-center item-actions">' +
       '<button type="button" data-i18n-aria="ui.removeItemAria" aria-label="Remove item" class="remove-item-btn rounded-md p-1.5 text-ink-soft transition-colors hover:text-accent">' +
       '<svg class="h-5 w-5" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>' +
       '</button>' +

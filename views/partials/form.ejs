@@ -32,25 +32,25 @@
             <h2 data-i18n="ui.from" class="section-title">From</h2>
             <div>
                 <label for="company-name" data-i18n="ui.companyNameLabel" class="field-label">Company name</label>
-                <input id="company-name" type="text" data-i18n-ph="ui.companyNamePh" placeholder="Your Company Name" required class="invoice-input w-full rounded-md p-2.5">
+                <input id="company-name" type="text" autocomplete="organization" data-i18n-ph="ui.companyNamePh" placeholder="Your Company Name" required class="invoice-input w-full rounded-md p-2.5">
             </div>
             <div>
                 <label for="company-address" data-i18n="ui.companyAddressLabel" class="field-label">Company address</label>
-                <textarea id="company-address" data-i18n-ph="ui.companyAddressPh" placeholder="Your Address..." rows="2" class="invoice-input w-full rounded-md p-2.5"></textarea>
+                <textarea id="company-address" autocomplete="street-address" data-i18n-ph="ui.companyAddressPh" placeholder="Your Address..." rows="2" class="invoice-input w-full rounded-md p-2.5"></textarea>
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label for="company-city" data-i18n="ui.companyCityLabel" class="field-label">Company city</label>
-                    <input id="company-city" type="text" data-i18n-ph="ui.companyCityPh" placeholder="Your company city" class="invoice-input w-full rounded-md p-2.5">
+                    <input id="company-city" type="text" autocomplete="address-level2" data-i18n-ph="ui.companyCityPh" placeholder="Your company city" class="invoice-input w-full rounded-md p-2.5">
                 </div>
                 <div>
                     <label for="company-phone" data-i18n="ui.companyPhoneLabel" class="field-label">Company phone</label>
-                    <input id="company-phone" type="tel" data-i18n-ph="ui.companyPhonePh" placeholder="Your Company phone" class="invoice-input w-full rounded-md p-2.5">
+                    <input id="company-phone" type="tel" autocomplete="tel" data-i18n-ph="ui.companyPhonePh" placeholder="Your Company phone" class="invoice-input w-full rounded-md p-2.5">
                 </div>
             </div>
             <div>
                 <label for="company-email" data-i18n="ui.companyEmailLabel" class="field-label">Company email</label>
-                <input id="company-email" type="text" data-i18n-ph="ui.companyEmailPh" placeholder="Your company email" class="invoice-input w-full rounded-md p-2.5">
+                <input id="company-email" type="text" autocomplete="email" data-i18n-ph="ui.companyEmailPh" placeholder="Your company email" class="invoice-input w-full rounded-md p-2.5">
             </div>
         </div>
 
@@ -58,25 +58,25 @@
             <h2 data-i18n="ui.billTo" class="section-title">Bill To</h2>
             <div>
                 <label for="client-name" data-i18n="ui.clientNameLabel" class="field-label">Client name</label>
-                <input id="client-name" type="text" data-i18n-ph="ui.clientNamePh" placeholder="Client's Company Name" required class="invoice-input w-full rounded-md p-2.5">
+                <input id="client-name" type="text" autocomplete="organization" data-i18n-ph="ui.clientNamePh" placeholder="Client's Company Name" required class="invoice-input w-full rounded-md p-2.5">
             </div>
             <div>
                 <label for="client-address" data-i18n="ui.clientAddressLabel" class="field-label">Client address</label>
-                <textarea id="client-address" data-i18n-ph="ui.clientAddressPh" placeholder="Client's Address..." rows="2" class="invoice-input w-full rounded-md p-2.5"></textarea>
+                <textarea id="client-address" autocomplete="street-address" data-i18n-ph="ui.clientAddressPh" placeholder="Client's Address..." rows="2" class="invoice-input w-full rounded-md p-2.5"></textarea>
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label for="client-city" data-i18n="ui.clientCityLabel" class="field-label">Client city</label>
-                    <input id="client-city" type="text" data-i18n-ph="ui.clientCityPh" placeholder="Your client city" class="invoice-input w-full rounded-md p-2.5">
+                    <input id="client-city" type="text" autocomplete="address-level2" data-i18n-ph="ui.clientCityPh" placeholder="Your client city" class="invoice-input w-full rounded-md p-2.5">
                 </div>
                 <div>
                     <label for="client-phone" data-i18n="ui.clientPhoneLabel" class="field-label">Client phone</label>
-                    <input id="client-phone" type="tel" data-i18n-ph="ui.clientPhonePh" placeholder="Your client phone" class="invoice-input w-full rounded-md p-2.5">
+                    <input id="client-phone" type="tel" autocomplete="tel" data-i18n-ph="ui.clientPhonePh" placeholder="Your client phone" class="invoice-input w-full rounded-md p-2.5">
                 </div>
             </div>
             <div>
                 <label for="client-email" data-i18n="ui.clientEmailLabel" class="field-label">Client email</label>
-                <input id="client-email" type="text" data-i18n-ph="ui.clientEmailPh" placeholder="Your client email" class="invoice-input w-full rounded-md p-2.5">
+                <input id="client-email" type="text" autocomplete="email" data-i18n-ph="ui.clientEmailPh" placeholder="Your client email" class="invoice-input w-full rounded-md p-2.5">
             </div>
         </div>
     </section>
@@ -117,8 +117,8 @@
             </button>
         </div>
 
-        <div class="mt-3 overflow-x-auto">
-            <table class="w-full border-collapse">
+        <div class="mt-3">
+            <table class="item-table">
                 <thead>
                     <tr class="border-b border-rule text-left">
                         <th data-i18n="ui.tableDescription" class="w-1/2 py-2 text-xs font-semibold uppercase tracking-wide text-ink-soft">Description</th>
@@ -145,7 +145,7 @@
             </div>
             <div class="flex items-center justify-between text-ink-soft">
                 <label for="tax-rate" data-i18n="ui.taxRate" class="field-label mb-0">Tax (%)</label>
-                <input id="tax-rate" type="number" value="0" min="0" max="100" required class="invoice-input money w-24 rounded-md p-1.5 text-right">
+                <input id="tax-rate" type="number" value="0" min="0" max="100" inputmode="decimal" required class="invoice-input money w-24 rounded-md p-2.5 text-right">
             </div>
             <hr class="rule">
             <div class="flex items-baseline justify-between">
@@ -169,9 +169,15 @@
         </div>
     </section>
 
-    <!-- Submit -->
-    <section class="pt-2">
-        <button id="submit-btn" type="submit" class="btn-primary w-full rounded-md px-8 py-3 text-base sm:w-auto">
+    <!-- Sticky action bar: running total + the single submit button.
+         Wide screens: static, just the button at the end of the form.
+         Phones/tablets: pinned to the bottom in the thumb zone. -->
+    <section class="action-bar">
+        <div class="action-bar-total">
+            <span data-i18n="ui.total" class="action-bar-label">Total</span>
+            <span id="action-total" class="action-bar-value money">$0.00</span>
+        </div>
+        <button id="submit-btn" type="submit" class="btn-primary rounded-md px-8 py-3 text-base">
             <span id="submit-btn-label" data-i18n="ui.submit">Submit for Processing</span>
         </button>
     </section>

@@ -94,6 +94,16 @@ html.dark {
     outline-offset: 2px;
   }
 
+  /* Touch targets and iOS: form controls stay >=16px so focusing a field on a
+     phone never triggers the browser's auto-zoom. */
+  @media (max-width: 767px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+
   /* Honour the OS motion preference. */
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -256,5 +266,105 @@ html.dark {
     background-color: var(--color-field);
     border-color: var(--color-field-border);
     color: var(--color-ink-soft);
+  }
+
+  /* ---- Item editor: table on wide screens, stacked blocks on phones --------
+     One DOM, two presentations. Below 768px each <tr> becomes a labeled block
+     so nothing scrolls sideways at 320px. */
+  .item-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  @media (max-width: 767px) {
+    .item-table,
+    .item-table tbody,
+    .item-table tr,
+    .item-table td {
+      display: block;
+      width: 100%;
+    }
+
+    /* The column headings are redundant once every field is labeled inline. */
+    .item-table thead {
+      display: none;
+    }
+
+    .item-table .item-row {
+      position: relative;
+      padding: 0.75rem 2.5rem 0.75rem 0;
+      border-bottom: 1px solid var(--color-rule);
+    }
+
+    .item-table .item-row td {
+      padding: 0.25rem 0;
+    }
+
+    /* Inline labels come from data-label on each cell. */
+    .item-table .item-row td::before {
+      content: attr(data-label);
+      display: block;
+      margin-bottom: 0.125rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--color-ink-soft);
+    }
+
+    /* Removed cells (the action column) render inline, top-right. */
+    .item-table .item-row td.item-actions {
+      position: absolute;
+      top: 0.75rem;
+      right: 0;
+      width: auto;
+      padding: 0;
+    }
+    .item-table .item-row td.item-actions::before {
+      content: none;
+    }
+  }
+
+  /* ---- Sticky action bar (phones/tablets): running total + Generate -------- */
+  .action-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+    background-color: color-mix(in srgb, var(--color-paper) 96%, transparent);
+    border-top: 1px solid var(--color-rule);
+    backdrop-filter: blur(8px);
+  }
+  .action-bar-total {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+  }
+  .action-bar-total .action-bar-label {
+    font-size: 0.75rem;
+    color: var(--color-ink-soft);
+  }
+  .action-bar-total .action-bar-value {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-accent);
+  }
+
+  /* On wide screens the bar is just the submit section, inline at the end. */
+  @media (min-width: 1024px) {
+    .action-bar {
+      position: static;
+      padding: 0;
+      margin-top: 2.5rem;
+      background-color: transparent;
+      border-top: 0;
+      backdrop-filter: none;
+    }
+    .action-bar-total {
+      display: none;
+    }
   }
 }

@@ -371,6 +371,72 @@ describe('document type segmented control (chunk R3)', () => {
   });
 });
 
+describe('mobile-first structure (chunk R4)', () => {
+  it('labels each item cell for the stacked mobile layout', async () => {
+    const { document } = await boot();
+    const row = document.querySelector('.item-row')!;
+    const cells = row.querySelectorAll('td');
+    expect(cells[0].getAttribute('data-label')).toBe('Description');
+    expect(cells[1].getAttribute('data-label')).toBe('Qty');
+    expect(cells[2].getAttribute('data-label')).toBe('Price');
+  });
+
+  it('translates the stacked cell labels with the rest of the UI', async () => {
+    const { window, document } = await boot(undefined, { lang: 'fr' });
+    const row = document.querySelector('.item-row')!;
+    const cells = row.querySelectorAll('td');
+    expect(cells[0].getAttribute('data-label')).toBe('Description');
+    expect(cells[1].getAttribute('data-label')).toBe(fr['ui.tableQty']);
+    // switching back translates them forward again
+    const btn = document.querySelector('.lang-btn[data-lang="en"]') as HTMLElement;
+    btn.dispatchEvent(new window.Event('click', { bubbles: true }));
+    expect(row.querySelectorAll('td')[1].getAttribute('data-label')).toBe('Qty');
+  });
+
+  it('mirrors the running total into the sticky action bar', async () => {
+    const { window, document } = await boot();
+    expect(document.getElementById('action-total')!.textContent).toBe('$0.00');
+
+    setItem(window, document, '2', '10', '10');
+    expect(document.getElementById('action-total')!.textContent).toBe('$22.00');
+
+    const currency = document.getElementById('currency') as HTMLSelectElement;
+    currency.value = 'EUR';
+    currency.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(document.getElementById('action-total')!.textContent).toBe(
+      new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(22),
+    );
+  });
+
+  it('keeps the single submit button inside the action bar', async () => {
+    const { document } = await boot();
+    expect(document.getElementById('submit-btn')!.closest('.action-bar')).toBeTruthy();
+    expect(document.querySelectorAll('#submit-btn')).toHaveLength(1);
+  });
+
+  it('hints the numeric keyboard and autofill on mobile', async () => {
+    const { document } = await boot();
+
+    const qty = document.querySelector('.item-row .quantity') as HTMLInputElement;
+    const price = document.querySelector('.item-row .price') as HTMLInputElement;
+    expect(qty.getAttribute('inputmode')).toBe('decimal');
+    expect(price.getAttribute('inputmode')).toBe('decimal');
+
+    const pairs: Record<string, string> = {
+      'company-name': 'organization',
+      'company-address': 'street-address',
+      'company-phone': 'tel',
+      'company-email': 'email',
+      'client-name': 'organization',
+      'client-email': 'email',
+    };
+    for (const [id, autocomplete] of Object.entries(pairs)) {
+      expect(document.getElementById(id)!.getAttribute('autocomplete')).toBe(autocomplete);
+    }
+    expect((document.getElementById('company-phone') as HTMLInputElement).type).toBe('tel');
+  });
+});
+
 describe('accessibility (chunk 4.5)', () => {
   it('gives every form control an accessible name (label[for] or aria-label)', async () => {
     const { document } = await boot();
