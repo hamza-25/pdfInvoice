@@ -2,11 +2,37 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import ejs from 'ejs';
 import { JSDOM } from 'jsdom';
 import { en } from '../src/locales/en';
 import { fr } from '../src/locales/fr';
 
-const html = fs.readFileSync(path.resolve(process.cwd(), 'views/index.ejs'), 'utf8');
+/**
+ * The page is assembled from EJS partials (chunk R2), so render it the way the
+ * server does — with `filename` set so includes resolve — and test the HTML
+ * that actually ships. jsdom does not fetch `<script src>`, so the two page
+ * scripts are inlined into the rendered HTML instead (theme boot in <head>,
+ * behaviour bundle deferred after the DOM).
+ */
+const renderPage = () => {
+  const view = path.resolve(process.cwd(), 'views/index.ejs');
+  let html = ejs.render(fs.readFileSync(view, 'utf8'), {}, { filename: view });
+
+  // Stand in for the browser's fetch of the external scripts. Keep the original
+  // tags so tests can still assert the real markup references /js/*.
+  html = html.replace(
+    /<script src="\/js\/theme-boot\.js"><\/script>/,
+    `<script src="/js/theme-boot.js"></script><script>${themeBootJs}</script>`,
+  );
+  html = html.replace(
+    /<script src="\/js\/app\.js" defer><\/script>/,
+    `<script src="/js/app.js" defer></script><script>window.addEventListener('DOMContentLoaded',()=>{${appJs}});</script>`,
+  );
+  return html;
+};
+
+const appJs = fs.readFileSync(path.resolve(process.cwd(), 'public/js/app.js'), 'utf8');
+const themeBootJs = fs.readFileSync(path.resolve(process.cwd(), 'public/js/theme-boot.js'), 'utf8');
 
 type FetchCall = { url: string; options: { method?: string; body?: string } };
 type MockHandler = (url: string, options: FetchCall['options']) => Promise<unknown>;
@@ -35,14 +61,15 @@ interface BootOptions {
 
 /**
  * Boot the form in jsdom with a mocked fetch (and mocked download), and resolve
- * once the inline script's DOMContentLoaded handler has run.
+ * once the page scripts have run. Mirrors the real load order: theme-boot.js
+ * evaluates before the DOM (pre-paint), app.js after DOMContentLoaded.
  */
 function boot(fetchImpl?: MockHandler, options: BootOptions = {}): Promise<Harness> {
   const calls: FetchCall[] = [];
   const openCalls: string[] = [];
   const stats = { anchorClicks: 0 };
   return new Promise((resolve) => {
-    const dom = new JSDOM(html, {
+    const dom = new JSDOM(renderPage(), {
       runScripts: 'dangerously',
       url: 'http://localhost/',
       beforeParse(window) {
@@ -56,6 +83,9 @@ function boot(fetchImpl?: MockHandler, options: BootOptions = {}): Promise<Harne
         if (options.theme) {
           window.localStorage.setItem('pdfinvoice-theme', options.theme);
         }
+
+        // theme-boot.js is inlined in <head> by renderPage() and evaluates
+        // during parsing, exactly like a real <script src>.
 
         // Don't actually try to navigate on download; count the clicks instead.
         window.HTMLAnchorElement.prototype.click = function () {
@@ -333,10 +363,11 @@ describe('accessibility (chunk 4.5)', () => {
   });
 
   it('has a visible keyboard focus style', async () => {
-    const { document } = await boot();
-
-    const css = document.querySelector('style')!.textContent ?? '';
+    // Styles now live in the Tailwind source (chunk R2) and are compiled to
+    // /css/app.css — assert against the source that generates them.
+    const css = fs.readFileSync(path.resolve(process.cwd(), 'src/styles/app.css'), 'utf8');
     expect(css).toContain(':focus-visible');
+    expect(css).toContain('outline');
   });
 
   it('sets aria-busy on the submit button while the request is in flight', async () => {
@@ -379,15 +410,12 @@ describe('language switcher (chunk 5.3)', () => {
   it('styles the pressed language button and leaves the other one neutral', async () => {
     const { document } = await boot();
 
-    const css = document.querySelector('style')!.textContent ?? '';
-    // Active state: blue background, white text.
-    expect(css).toMatch(/\.lang-btn\[aria-pressed="true"\][^{]*\{[^}]*background-color:\s*#2563eb/);
-    expect(css).toMatch(/\.lang-btn\[aria-pressed="true"\][^{]*\{[^}]*color:\s*#fff/);
-    // Inactive state: light surface in light mode, slate surface in dark mode.
-    expect(css).toMatch(/\.lang-btn\[aria-pressed="false"\][^{]*\{[^}]*background-color:\s*#fff/);
-    expect(css).toMatch(
-      /html\.dark \.lang-btn\[aria-pressed="false"\][^{]*\{[^}]*background-color:\s*#1e293b/,
-    );
+    // Styles live in the Tailwind source now (chunk R2); assert the states are
+    // driven by the accent token and the aria-pressed attribute.
+    const css = fs.readFileSync(path.resolve(process.cwd(), 'src/styles/app.css'), 'utf8');
+    expect(css).toMatch(/\.lang-btn\[aria-pressed='true'\][^{]*\{[^}]*var\(--color-accent\)/);
+    expect(css).toMatch(/\.lang-btn\[aria-pressed='true'\][^{]*\{[^}]*color:\s*#fff/);
+    expect(css).toMatch(/\.lang-btn\[aria-pressed='false'\][^{]*\{[^}]*var\(--color-field\)/);
 
     // Both buttons expose the hook the CSS rules and the click handler rely on.
     expect(document.querySelectorAll('.lang-btn[data-lang="en"]')).toHaveLength(1);

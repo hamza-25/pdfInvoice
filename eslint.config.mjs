@@ -11,6 +11,11 @@ export default tseslint.config(
     // Browser scripts served from /public run outside the TS build.
     files: ['public/js/**/*.js'],
     languageOptions: { globals: globals.browser },
+    rules: {
+      // Empty catch blocks are deliberate resilience guards (storage/quota/
+      // matchMedia may throw); the binding is unused on purpose.
+      '@typescript-eslint/no-unused-vars': ['error', { caughtErrors: 'none' }],
+    },
   },
   prettier,
 );

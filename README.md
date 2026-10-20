@@ -134,9 +134,16 @@ src/
   utils/sanitize.ts                  PDF-safe text sanitization
   interfaces/index.ts                shared types
 views/
-  index.ejs                          the form page
+  index.ejs                          thin shell (links scripts, includes partials)
+  partials/
+    head.ejs                         meta, theme boot, fonts, stylesheet
+    header.ejs                       title, EN/FR + theme controls
+    form.ejs                         the document form
+    toasts.ejs                       success/error live regions
 public/
   css/app.css                        compiled stylesheet (generated, gitignored)
+  js/theme-boot.js                   pre-paint theme (no FOUC)
+  js/app.js                          form behaviour (i18n, totals, submit)
 tests/                               Vitest suite (API, frontend, security, logging)
 ```
 

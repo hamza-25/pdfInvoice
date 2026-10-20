@@ -27,6 +27,9 @@ describe('security headers (chunk 3.1)', () => {
     // Chunk R1: the stylesheet is compiled and served locally — no CDN.
     expect(res.headers['content-security-policy']).not.toContain('cdn.tailwindcss.com');
     expect(res.headers['content-security-policy']).toContain("default-src 'self'");
+    // Chunk R2: no inline scripts/styles left, so the CSP allows none.
+    expect(res.headers['content-security-policy']).toContain("script-src 'self'");
+    expect(res.headers['content-security-policy']).not.toContain("'unsafe-inline'");
   });
 
   it('does not advertise x-powered-by', async () => {
@@ -50,6 +53,29 @@ describe('static assets (chunk R1)', () => {
 
     expect(res.text).toContain('/css/app.css');
     expect(res.text).not.toContain('cdn.tailwindcss.com');
+  });
+});
+
+describe('no inline scripts or styles (chunk R2)', () => {
+  it('renders no inline <script> or <style> blocks', async () => {
+    const res = await request(app).get('/');
+
+    // Any inline block would need CSP 'unsafe-inline' — assert there are none.
+    expect(res.text).not.toMatch(/<script(?![^>]*\ssrc=)[^>]*>[\s\S]*?<\/script>/i);
+    expect(res.text).not.toMatch(/<style[\s>]/i);
+    expect(res.text).not.toMatch(/\sstyle="/i); // no inline style attributes either
+  });
+
+  it('serves the behaviour scripts from /js', async () => {
+    const page = await request(app).get('/');
+    expect(page.text).toContain('src="/js/app.js"');
+    expect(page.text).toContain('src="/js/theme-boot.js"');
+
+    for (const file of ['/js/app.js', '/js/theme-boot.js']) {
+      const res = await request(app).get(file);
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toContain('javascript');
+    }
   });
 });
 

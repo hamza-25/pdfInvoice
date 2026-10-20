@@ -26,16 +26,16 @@ app.use(
   }),
 );
 
-// Security headers. The CSP is tuned for the served page: the stylesheet is
-// served from /public (chunk R1, no CDN), and there is still an inline
-// <script> (theme boot + form logic) plus inline <style> until chunk R2.
+// Security headers. The CSP is tuned for the served page: stylesheet and
+// scripts are all same-origin files (chunk R2 — no inline script/style left),
+// only the Google Fonts origins are allowed remotely.
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
-        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", 'https://fonts.googleapis.com'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
         imgSrc: ["'self'", 'data:'],
         objectSrc: ["'none'"],

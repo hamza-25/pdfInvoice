@@ -1,0 +1,127 @@
+<form id="invoice-form" class="bg-white dark:bg-slate-800 dark:border dark:border-slate-700 p-6 md:p-8 rounded-2xl shadow-lg">
+    <!-- Invoice Type -->
+    <section class="mb-8">
+        <h3 data-i18n="ui.docTypeHeading" class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">Document Type</h3>
+        <label for="invoice-type" data-i18n="ui.docTypeLabel" class="sr-only">Document type</label>
+        <select id="invoice-type" class="w-full p-2.5 rounded-md invoice-input">
+            <option value="SERVICE INVOICE" data-i18n="ui.docTypeService">Service Invoice</option>
+            <option value="PRODUCT INVOICE" data-i18n="ui.docTypeProduct">Product Invoice</option>
+            <option value="QUOTE" data-i18n="ui.docTypeQuote">Quote</option>
+            <option value="RECEIPT" data-i18n="ui.docTypeReceipt">Receipt</option>
+        </select>
+    </section>
+
+    <!-- Company and Client Details -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-8">
+        <div>
+            <h3 data-i18n="ui.from" class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">From</h3>
+            <label for="company-name" data-i18n="ui.companyNameLabel" class="sr-only">Company name</label>
+            <input id="company-name" type="text" data-i18n-ph="ui.companyNamePh" placeholder="Your Company Name" required class="w-full p-2.5 rounded-md invoice-input">
+            <label for="company-address" data-i18n="ui.companyAddressLabel" class="sr-only">Company address</label>
+            <textarea id="company-address" data-i18n-ph="ui.companyAddressPh" placeholder="Your Address..." class="w-full p-2.5 mt-2 rounded-md invoice-input" rows="2"></textarea>
+            <label for="company-phone" data-i18n="ui.companyPhoneLabel" class="sr-only">Company phone</label>
+            <input id="company-phone" type="text" data-i18n-ph="ui.companyPhonePh" placeholder="Your Company phone" class="w-full p-2.5 rounded-md invoice-input">
+            <label for="company-city" data-i18n="ui.companyCityLabel" class="sr-only">Company city</label>
+            <input id="company-city" type="text" data-i18n-ph="ui.companyCityPh" placeholder="Your company city" class="w-full p-2.5 rounded-md invoice-input">
+            <label for="company-email" data-i18n="ui.companyEmailLabel" class="sr-only">Company email</label>
+            <input id="company-email" type="text" data-i18n-ph="ui.companyEmailPh" placeholder="Your company email" class="w-full p-2.5 rounded-md invoice-input">
+        </div>
+        <div>
+            <h3 data-i18n="ui.billTo" class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">Bill To</h3>
+            <label for="client-name" data-i18n="ui.clientNameLabel" class="sr-only">Client name</label>
+            <input id="client-name" type="text" data-i18n-ph="ui.clientNamePh" placeholder="Client's Company Name" required class="w-full p-2.5 rounded-md invoice-input">
+            <label for="client-address" data-i18n="ui.clientAddressLabel" class="sr-only">Client address</label>
+            <textarea id="client-address" data-i18n-ph="ui.clientAddressPh" placeholder="Client's Address..." class="w-full p-2.5 mt-2 rounded-md invoice-input" rows="2"></textarea>
+            <label for="client-phone" data-i18n="ui.clientPhoneLabel" class="sr-only">Client phone</label>
+            <input id="client-phone" type="text" data-i18n-ph="ui.clientPhonePh" placeholder="Your client phone" class="w-full p-2.5 rounded-md invoice-input">
+            <label for="client-city" data-i18n="ui.clientCityLabel" class="sr-only">Client city</label>
+            <input id="client-city" type="text" data-i18n-ph="ui.clientCityPh" placeholder="Your client city" class="w-full p-2.5 rounded-md invoice-input">
+            <label for="client-email" data-i18n="ui.clientEmailLabel" class="sr-only">Client email</label>
+            <input id="client-email" type="text" data-i18n-ph="ui.clientEmailPh" placeholder="Your client email" class="w-full p-2.5 rounded-md invoice-input">
+        </div>
+    </section>
+
+    <!-- Invoice Metadata -->
+    <section class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+        <div>
+            <label for="invoice-date" data-i18n="ui.dateLabel" class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Date</label>
+            <input id="invoice-date" type="date" required class="w-full p-2.5 rounded-md invoice-input text-slate-500 dark:text-slate-400">
+        </div>
+        <div>
+            <label for="due-date" data-i18n="ui.dueDateLabel" class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Due Date</label>
+            <input id="due-date" type="date" class="w-full p-2.5 rounded-md invoice-input text-slate-500 dark:text-slate-400">
+        </div>
+        <div>
+            <label for="currency" data-i18n="ui.currencyLabel" class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Currency</label>
+            <select id="currency" required class="w-full p-2.5 rounded-md invoice-input">
+                <option value="USD">USD</option>
+                <option value="MAD">MAD</option>
+                <option value="EUR">EUR</option>
+                <option value="JPY">JPY</option>
+                <option value="GBP">GBP</option>
+            </select>
+        </div>
+    </section>
+
+    <!-- Invoice Items Table -->
+    <section class="mb-8">
+        <h3 data-i18n="ui.itemsHeading" class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">Items (max: 15)</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="border-b border-slate-200 dark:border-slate-700">
+                    <tr class="text-sm text-slate-600 dark:text-slate-400">
+                        <th data-i18n="ui.tableDescription" class="p-2 font-semibold w-1/2 text-left">Description</th>
+                        <th data-i18n="ui.tableQty" class="p-2 font-semibold w-1/6 text-center">Qty</th>
+                        <th data-i18n="ui.tablePrice" class="p-2 font-semibold w-1/4 text-center">Price</th>
+                        <th class="p-2"><span data-i18n="ui.actions" class="sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody id="invoice-items"></tbody>
+            </table>
+        </div>
+        <div class="mt-4 flex items-center gap-3">
+            <button type="button" id="add-item-btn" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg class="w-5 h-5 mr-1" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                <span data-i18n="ui.addItem">Add Item</span>
+            </button>
+            <span id="items-limit-hint" data-i18n="ui.itemsLimitHint" class="hidden text-sm text-amber-600 dark:text-amber-400">Maximum of 15 items reached.</span>
+        </div>
+    </section>
+
+    <!-- Totals Section -->
+    <section class="flex justify-end mb-8">
+        <div class="w-full max-w-xs space-y-2">
+            <div class="flex justify-between text-slate-600 dark:text-slate-400">
+                <span data-i18n="ui.subtotal">Subtotal</span>
+                <span id="subtotal">$0.00</span>
+            </div>
+            <div class="flex justify-between items-center text-slate-600 dark:text-slate-400">
+                <label for="tax-rate" data-i18n="ui.taxRate">Tax (%)</label>
+                <input id="tax-rate" type="number" value="0" min="0" max="100" required class="w-20 p-1 text-right rounded-md invoice-input">
+            </div>
+            <hr class="border-slate-300 dark:border-slate-700">
+            <div class="flex justify-between font-bold text-xl text-slate-800 dark:text-slate-100"><span data-i18n="ui.total">Total</span><span id="total-amount">$0.00</span></div>
+        </div>
+    </section>
+
+    <!-- Payment and Notes -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-x-8">
+        <div>
+            <h3 data-i18n="ui.paymentHeading" class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">Payment Type</h3>
+            <label for="payment-type" data-i18n="ui.paymentLabel" class="sr-only">Payment type</label>
+            <textarea id="payment-type" data-i18n-ph="ui.paymentPh" placeholder="e.g., Bank Transfer, Credit Card, Net 30" class="w-full p-2.5 rounded-md invoice-input" rows="4"></textarea>
+        </div>
+        <div>
+            <h3 data-i18n="ui.notesHeading" class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">Notes</h3>
+            <label for="notes" data-i18n="ui.notesLabel" class="sr-only">Notes</label>
+            <textarea id="notes" data-i18n-ph="ui.notesPh" placeholder="Thank you for your business!" class="w-full p-2.5 rounded-md invoice-input" rows="4"></textarea>
+        </div>
+    </section>
+
+    <!-- Submit Button -->
+    <section class="text-center mt-10">
+        <button id="submit-btn" class="bg-blue-600 text-white font-bold py-3 px-10 rounded-lg text-lg hover:bg-blue-700 transition-colors">
+            <span id="submit-btn-label" data-i18n="ui.submit">Submit for Processing</span>
+        </button>
+    </section>
+</form>
