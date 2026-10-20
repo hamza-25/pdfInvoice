@@ -376,6 +376,24 @@ describe('language switcher (chunk 5.3)', () => {
     expect(document.documentElement.lang).toBe('en');
   });
 
+  it('styles the pressed language button and leaves the other one neutral', async () => {
+    const { document } = await boot();
+
+    const css = document.querySelector('style')!.textContent ?? '';
+    // Active state: blue background, white text.
+    expect(css).toMatch(/\.lang-btn\[aria-pressed="true"\][^{]*\{[^}]*background-color:\s*#2563eb/);
+    expect(css).toMatch(/\.lang-btn\[aria-pressed="true"\][^{]*\{[^}]*color:\s*#fff/);
+    // Inactive state: light surface in light mode, slate surface in dark mode.
+    expect(css).toMatch(/\.lang-btn\[aria-pressed="false"\][^{]*\{[^}]*background-color:\s*#fff/);
+    expect(css).toMatch(
+      /html\.dark \.lang-btn\[aria-pressed="false"\][^{]*\{[^}]*background-color:\s*#1e293b/,
+    );
+
+    // Both buttons expose the hook the CSS rules and the click handler rely on.
+    expect(document.querySelectorAll('.lang-btn[data-lang="en"]')).toHaveLength(1);
+    expect(document.querySelectorAll('.lang-btn[data-lang="fr"]')).toHaveLength(1);
+  });
+
   it('translates placeholders and dynamic item rows', async () => {
     const { document } = await boot(undefined, { lang: 'fr' });
 

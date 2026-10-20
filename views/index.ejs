@@ -89,6 +89,16 @@
         #notification-toast {
              transition: opacity 0.3s, transform 0.3s;
         }
+
+        /* EN/FR switcher: the active state follows aria-pressed, which applyLang()
+           toggles on click and on load (localStorage may restore 'fr'). */
+        .lang-btn { transition: background-color 0.2s, border-color 0.2s, color 0.2s; }
+        .lang-btn[aria-pressed="true"] { background-color: #2563eb; border-color: transparent; color: #fff; }
+        .lang-btn[aria-pressed="false"] { background-color: #fff; border-color: #cbd5e1; color: #475569; }
+        /* Tailwind's stylesheet is injected after this block, so the dark-mode
+           variants need the extra specificity to win the tie. */
+        html.dark .lang-btn[aria-pressed="true"] { background-color: #2563eb; border-color: transparent; color: #fff; }
+        html.dark .lang-btn[aria-pressed="false"] { background-color: #1e293b; border-color: #334155; color: #e2e8f0; }
     </style>
 </head>
 <body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
