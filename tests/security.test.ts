@@ -24,13 +24,32 @@ describe('security headers (chunk 3.1)', () => {
     expect(res.status).toBe(200);
     expect(res.headers['x-content-type-options']).toBe('nosniff');
     expect(res.headers['x-frame-options']).toBeTruthy();
-    expect(res.headers['content-security-policy']).toContain('cdn.tailwindcss.com');
+    // Chunk R1: the stylesheet is compiled and served locally — no CDN.
+    expect(res.headers['content-security-policy']).not.toContain('cdn.tailwindcss.com');
     expect(res.headers['content-security-policy']).toContain("default-src 'self'");
   });
 
   it('does not advertise x-powered-by', async () => {
     const res = await request(app).get('/');
     expect(res.headers['x-powered-by']).toBeUndefined();
+  });
+});
+
+describe('static assets (chunk R1)', () => {
+  it('serves the compiled stylesheet from /css/app.css', async () => {
+    const res = await request(app).get('/css/app.css');
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain('text/css');
+    // Tailwind utilities generated from the tokens in src/styles/app.css.
+    expect(res.text).toContain('.bg-paper');
+  });
+
+  it('links the local stylesheet instead of a CDN', async () => {
+    const res = await request(app).get('/');
+
+    expect(res.text).toContain('/css/app.css');
+    expect(res.text).not.toContain('cdn.tailwindcss.com');
   });
 });
 

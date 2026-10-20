@@ -1,0 +1,65 @@
+/*
+ * Tailwind v4 entry stylesheet.
+ *
+ * `app.css` is generated from this file by `npm run build:css`. Design tokens
+ * live in the @theme block below so they are available both as Tailwind
+ * utilities (bg-paper, text-ink, …) and as plain CSS variables.
+ *
+ * Content detection is heuristic in v4 — the @source lines are load-bearing.
+ */
+@import 'tailwindcss';
+
+@source '../../views';
+@source '../../public/js';
+
+/* Class-based dark mode: `.dark` on <html> wins over the OS preference unless
+ * the OS has no say (the head script sets the class before first paint). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* ---- Surfaces: light = "paper", dark = "night desk" ---- */
+  --color-paper: #fafaf7; /* <body> background */
+  --color-sheet: #ffffff; /* the A4 sheet — paper stays paper in both themes */
+  --color-field: #ffffff; /* inputs */
+  --color-field-border: #d8d5cc;
+  --color-rule: #e5e3dc; /* hairlines, dividers */
+
+  /* ---- Ink ---- */
+  --color-ink: #1a1f26; /* primary text */
+  --color-ink-soft: #5c6673; /* secondary text */
+
+  /* ---- Accent: one oxblood/stamp red, spent on the CTA + totals + focus ---- */
+  --color-accent: #9e2b25;
+  --color-accent-hover: #87231e;
+  --color-accent-tint: #f7edec; /* error / inline-state background */
+
+  /* ---- Ledger green: success states only ---- */
+  --color-ledger: #2c6e49;
+
+  /* ---- Type ---- */
+  --font-display: 'Spectral', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* Dark mode overrides live on :root.dark rather than in a second @theme block:
+ * the same variable names keep every generated utility theme-aware. */
+html.dark {
+  color-scheme: dark;
+  --color-paper: #16181c;
+  --color-sheet: #ffffff;
+  --color-field: #1e2126;
+  --color-field-border: #33383f;
+  --color-rule: #2b2f36;
+  --color-ink: #e9e7e2;
+  --color-ink-soft: #9ba3ae;
+  --color-accent: #cb5b52;
+  --color-accent-hover: #b84c43;
+  --color-accent-tint: #2a1c1b;
+  --color-ledger: #57a075;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+  }
+}
