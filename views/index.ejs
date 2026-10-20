@@ -5,8 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invoice Generator Pro</title>
     
+    <!-- Apply theme before paint to avoid FOUC -->
+    <script>
+        try {
+            const storedTheme = localStorage.getItem('pdfinvoice-theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const useDark = storedTheme ? storedTheme === 'dark' : prefersDark;
+            if (useDark) {
+                document.documentElement.classList.add('dark');
+            }
+        } catch (e) {}
+    </script>
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        };
+    </script>
 
     <!-- Google Fonts: Inter & Roboto Slab -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
