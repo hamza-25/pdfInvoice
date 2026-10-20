@@ -9,7 +9,12 @@
     <script>
         try {
             const storedTheme = localStorage.getItem('pdfinvoice-theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            // Guard matchMedia separately: if it's missing or throws, the
+            // stored theme must still be applied.
+            let prefersDark = false;
+            try {
+                prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            } catch (e) {}
             const useDark = storedTheme ? storedTheme === 'dark' : prefersDark;
             if (useDark) {
                 document.documentElement.classList.add('dark');
@@ -35,7 +40,11 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5; /* A slightly cooler grey */
+        }
+
+        /* Native controls (date pickers, select dropdowns, scrollbars) follow the theme */
+        html.dark {
+            color-scheme: dark;
         }
 
         .gradient-text {
@@ -43,6 +52,9 @@
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
+        }
+        .dark .gradient-text {
+            background-image: linear-gradient(to right, #cbd5e1, #e2e8f0);
         }
 
         .invoice-input {
@@ -53,6 +65,18 @@
         .invoice-input:focus {
             box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.4);
             border-color: #4299e1; /* A professional blue */
+        }
+        /* One override covers every static field and the dynamically added item rows */
+        .dark .invoice-input {
+            background-color: #1e293b; /* slate-800 */
+            border-color: #334155; /* slate-700 */
+            color: #e2e8f0; /* slate-200 */
+        }
+        .dark .invoice-input::placeholder {
+            color: #94a3b8; /* slate-400 */
+        }
+        .dark .invoice-input:focus {
+            border-color: #60a5fa; /* blue-400, keeps the ring visible on dark */
         }
 
         /* Visible focus ring for keyboard navigation (WCAG 2.4.7) */
@@ -90,10 +114,10 @@
 
         <!-- Main Content Area: Form -->
         <div class="max-w-4xl mx-auto">
-            <form id="invoice-form" class="bg-white p-6 md:p-8 rounded-2xl shadow-lg">
+            <form id="invoice-form" class="bg-white dark:bg-slate-800 dark:border dark:border-slate-700 p-6 md:p-8 rounded-2xl shadow-lg">
                  <!-- Invoice Type -->
                 <section class="mb-8">
-                    <h3 data-i18n="ui.docTypeHeading" class="text-lg font-semibold text-slate-700 mb-2">Document Type</h3>
+                    <h3 data-i18n="ui.docTypeHeading" class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">Document Type</h3>
                     <label for="invoice-type" data-i18n="ui.docTypeLabel" class="sr-only">Document type</label>
                     <select id="invoice-type" class="w-full p-2.5 rounded-md invoice-input">
                         <option value="SERVICE INVOICE" data-i18n="ui.docTypeService">Service Invoice</option>
@@ -106,7 +130,7 @@
                 <!-- Company and Client Details -->
                 <section class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-8">
                     <div>
-                        <h3 data-i18n="ui.from" class="text-lg font-semibold text-slate-700 mb-2">From</h3>
+                        <h3 data-i18n="ui.from" class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">From</h3>
                         <label for="company-name" data-i18n="ui.companyNameLabel" class="sr-only">Company name</label>
                         <input id="company-name" type="text" data-i18n-ph="ui.companyNamePh" placeholder="Your Company Name" required class="w-full p-2.5 rounded-md invoice-input">
                         <label for="company-address" data-i18n="ui.companyAddressLabel" class="sr-only">Company address</label>
@@ -119,7 +143,7 @@
                         <input id="company-email" type="text" data-i18n-ph="ui.companyEmailPh" placeholder="Your company email" class="w-full p-2.5 rounded-md invoice-input">
                     </div>
                     <div>
-                        <h3 data-i18n="ui.billTo" class="text-lg font-semibold text-slate-700 mb-2">Bill To</h3>
+                        <h3 data-i18n="ui.billTo" class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">Bill To</h3>
                         <label for="client-name" data-i18n="ui.clientNameLabel" class="sr-only">Client name</label>
                         <input id="client-name" type="text" data-i18n-ph="ui.clientNamePh" placeholder="Client's Company Name" required class="w-full p-2.5 rounded-md invoice-input">
                         <label for="client-address" data-i18n="ui.clientAddressLabel" class="sr-only">Client address</label>
@@ -136,15 +160,15 @@
                 <!-- Invoice Metadata -->
                 <section class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
                     <div>
-                        <label for="invoice-date" data-i18n="ui.dateLabel" class="block text-sm font-medium text-slate-500 mb-1">Date</label>
-                        <input id="invoice-date" type="date" required class="w-full p-2.5 rounded-md invoice-input text-slate-500">
+                        <label for="invoice-date" data-i18n="ui.dateLabel" class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Date</label>
+                        <input id="invoice-date" type="date" required class="w-full p-2.5 rounded-md invoice-input text-slate-500 dark:text-slate-400">
                     </div>
                     <div>
-                        <label for="due-date" data-i18n="ui.dueDateLabel" class="block text-sm font-medium text-slate-500 mb-1">Due Date</label>
-                        <input id="due-date" type="date" class="w-full p-2.5 rounded-md invoice-input text-slate-500">
+                        <label for="due-date" data-i18n="ui.dueDateLabel" class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Due Date</label>
+                        <input id="due-date" type="date" class="w-full p-2.5 rounded-md invoice-input text-slate-500 dark:text-slate-400">
                     </div>
                     <div>
-                        <label for="currency" data-i18n="ui.currencyLabel" class="block text-sm font-medium text-slate-500 mb-1">Currency</label>
+                        <label for="currency" data-i18n="ui.currencyLabel" class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Currency</label>
                         <select name="" id="currency" required class="w-full p-2.5 rounded-md invoice-input">
                             <option value="USD">USD</option>
                             <option value="MAD">MAD</option>
@@ -157,11 +181,11 @@
 
                 <!-- Invoice Items Table -->
                 <section class="mb-8">
-                    <h3 data-i18n="ui.itemsHeading" class="text-lg font-semibold text-slate-700 mb-2">Items (max: 15)</h3>
+                    <h3 data-i18n="ui.itemsHeading" class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">Items (max: 15)</h3>
                     <div class="overflow-x-auto">
                         <table class="w-full">
-                            <thead class="border-b">
-                                <tr class="text-sm text-slate-600">
+                            <thead class="border-b border-slate-200 dark:border-slate-700">
+                                <tr class="text-sm text-slate-600 dark:text-slate-400">
                                     <th data-i18n="ui.tableDescription" class="p-2 font-semibold w-1/2 text-left">Description</th>
                                     <th data-i18n="ui.tableQty" class="p-2 font-semibold w-1/6 text-center">Qty</th>
                                     <th data-i18n="ui.tablePrice" class="p-2 font-semibold w-1/4 text-center">Price</th>
@@ -172,39 +196,39 @@
                         </table>
                     </div>
                     <div class="mt-4 flex items-center gap-3">
-                        <button type="button" id="add-item-btn" class="text-blue-600 hover:text-blue-800 font-semibold flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button type="button" id="add-item-btn" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
                             <svg class="w-5 h-5 mr-1" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                             <span data-i18n="ui.addItem">Add Item</span>
                         </button>
-                        <span id="items-limit-hint" data-i18n="ui.itemsLimitHint" class="hidden text-sm text-amber-600">Maximum of 15 items reached.</span>
+                        <span id="items-limit-hint" data-i18n="ui.itemsLimitHint" class="hidden text-sm text-amber-600 dark:text-amber-400">Maximum of 15 items reached.</span>
                     </div>
                 </section>
                 
                  <!-- Totals Section -->
                 <section class="flex justify-end mb-8">
                      <div class="w-full max-w-xs space-y-2">
-                            <div class="flex justify-between text-slate-600">
+                            <div class="flex justify-between text-slate-600 dark:text-slate-400">
                                 <span data-i18n="ui.subtotal">Subtotal</span>
                                 <span id="subtotal">$0.00</span>
                             </div>
-                            <div class="flex justify-between items-center text-slate-600">
+                            <div class="flex justify-between items-center text-slate-600 dark:text-slate-400">
                                 <label for="tax-rate" data-i18n="ui.taxRate">Tax (%)</label>
                                 <input id="tax-rate" type="number" value="0" min="0" max="100" required class="w-20 p-1 text-right rounded-md invoice-input">
                             </div>
-                            <hr class="border-slate-300">
-                            <div class="flex justify-between font-bold text-xl text-slate-800"><span data-i18n="ui.total" class="">Total</span><span id="total-amount">$0.00</span></div>
+                            <hr class="border-slate-300 dark:border-slate-700">
+                            <div class="flex justify-between font-bold text-xl text-slate-800 dark:text-slate-100"><span data-i18n="ui.total" class="">Total</span><span id="total-amount">$0.00</span></div>
                         </div>
                 </section>
 
                  <!-- Payment and Notes -->
                 <section class="grid grid-cols-1 md:grid-cols-2 gap-x-8">
                     <div>
-                        <h3 data-i18n="ui.paymentHeading" class="text-lg font-semibold text-slate-700 mb-2">Payment Type</h3>
+                        <h3 data-i18n="ui.paymentHeading" class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">Payment Type</h3>
                         <label for="payment-type" data-i18n="ui.paymentLabel" class="sr-only">Payment type</label>
                         <textarea id="payment-type" data-i18n-ph="ui.paymentPh" placeholder="e.g., Bank Transfer, Credit Card, Net 30" class="w-full p-2.5 rounded-md invoice-input" rows="4"></textarea>
                     </div>
                      <div>
-                        <h3 data-i18n="ui.notesHeading" class="text-lg font-semibold text-slate-700 mb-2">Notes</h3>
+                        <h3 data-i18n="ui.notesHeading" class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">Notes</h3>
                         <label for="notes" data-i18n="ui.notesLabel" class="sr-only">Notes</label>
                         <textarea id="notes" data-i18n-ph="ui.notesPh" placeholder="Thank you for your business!" class="w-full p-2.5 rounded-md invoice-input" rows="4"></textarea>
                     </div>
@@ -283,6 +307,41 @@
         });
 
 
+        // --- Theme (dark mode) ---
+        // The head script already applied the class before first paint; here we
+        // only wire the toggle, persistence, and follow the OS when the user
+        // has made no explicit choice.
+        const themeToggle = document.getElementById('theme-toggle');
+        const THEME_KEY = 'pdfinvoice-theme';
+        const prefersDarkQuery = typeof window.matchMedia === 'function'
+            ? window.matchMedia('(prefers-color-scheme: dark)')
+            : null;
+
+        const getStoredTheme = () => {
+            try { return localStorage.getItem(THEME_KEY); } catch (e) { return null; }
+        };
+
+        const applyTheme = (theme) => {
+            const isDark = theme === 'dark';
+            document.documentElement.classList.toggle('dark', isDark);
+            themeToggle.setAttribute('aria-pressed', String(isDark));
+        };
+
+        // Sync the button with the theme the head script picked.
+        applyTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+
+        themeToggle.addEventListener('click', () => {
+            const next = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+            try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+            applyTheme(next);
+        });
+
+        // No explicit choice yet -> mirror OS changes live.
+        if (prefersDarkQuery && !getStoredTheme() && typeof prefersDarkQuery.addEventListener === 'function') {
+            prefersDarkQuery.addEventListener('change', (e) => applyTheme(e.matches ? 'dark' : 'light'));
+        }
+
+
         // --- Totals state + rendering (single source of truth) ---
         let subtotalNumber = 0;
         let totalNumber = 0;
@@ -329,7 +388,7 @@
                 <td class="p-2"><input type="number" value="1" min="1" data-i18n-aria="ui.itemQuantityAria" aria-label="Quantity" class="quantity w-full p-2 text-center rounded-md invoice-input"></td>
                 <td class="p-2"><input type="number" value="0.00" min="0" step="0.01" data-i18n-aria="ui.itemPriceAria" aria-label="Price" class="price w-full p-2 text-center rounded-md invoice-input"></td>
                 <td class="p-2 text-center">
-                    <button type="button" data-i18n-aria="ui.removeItemAria" aria-label="Remove item" class="remove-item-btn text-slate-400 hover:text-red-500 transition-colors">
+                    <button type="button" data-i18n-aria="ui.removeItemAria" aria-label="Remove item" class="remove-item-btn text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">
                         <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                 </td>

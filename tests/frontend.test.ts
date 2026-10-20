@@ -27,6 +27,8 @@ interface BootOptions {
   popupBlocked?: boolean;
   /** Seed the persisted language before the page script runs. */
   lang?: 'en' | 'fr';
+  /** Seed the persisted theme before the page script runs. */
+  theme?: 'light' | 'dark';
   /** Simulate /i18n.js failing to load — the page must fall back to English. */
   withoutI18N?: boolean;
 }
@@ -50,6 +52,9 @@ function boot(fetchImpl?: MockHandler, options: BootOptions = {}): Promise<Harne
         }
         if (options.lang) {
           window.localStorage.setItem('pdfinvoice-lang', options.lang);
+        }
+        if (options.theme) {
+          window.localStorage.setItem('pdfinvoice-theme', options.theme);
         }
 
         // Don't actually try to navigate on download; count the clicks instead.
@@ -422,6 +427,48 @@ describe('language switcher (chunk 5.3)', () => {
 
     expect(document.querySelector('h1')!.textContent).toBe('Professional Document Builder');
     expect(document.getElementById('submit-btn-label')!.textContent).toBe('Submit for Processing');
+  });
+});
+
+describe('theme toggle (dark mode)', () => {
+  const toggle = (window: JSDOM['window'], document: Document) => {
+    document
+      .getElementById('theme-toggle')!
+      .dispatchEvent(new window.Event('click', { bubbles: true }));
+  };
+
+  it('boots in light mode when nothing is stored', async () => {
+    const { document } = await boot();
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    expect(document.getElementById('theme-toggle')!.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('applies a stored dark theme before the form script runs', async () => {
+    const { document } = await boot(undefined, { theme: 'dark' });
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(document.getElementById('theme-toggle')!.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('flips the theme, persists it, and flips back', async () => {
+    const { window, document } = await boot();
+
+    toggle(window, document);
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(window.localStorage.getItem('pdfinvoice-theme')).toBe('dark');
+    expect(document.getElementById('theme-toggle')!.getAttribute('aria-pressed')).toBe('true');
+
+    toggle(window, document);
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    expect(window.localStorage.getItem('pdfinvoice-theme')).toBe('light');
+    expect(document.getElementById('theme-toggle')!.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('honours the stored theme across a reload', async () => {
+    const { window: first, document: docA } = await boot();
+    toggle(first, docA);
+
+    const { document: docB } = await boot(undefined, { theme: 'dark' });
+    expect(docB.documentElement.classList.contains('dark')).toBe(true);
   });
 });
 
