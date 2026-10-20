@@ -68,6 +68,25 @@
     });
   });
 
+  // --- Document type: segmented radios mirror the real <select> ---------------
+  // The <select> stays the submitted source of truth (and the reset target);
+  // the radios are the visible control.
+  var docTypeSelect = document.getElementById('invoice-type');
+  var docTypeRadios = document.querySelectorAll('input[name="doc-type"]');
+
+  var setDocType = function (value) {
+    docTypeSelect.value = value;
+    docTypeRadios.forEach(function (radio) {
+      radio.checked = radio.value === value;
+    });
+  };
+
+  docTypeRadios.forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      docTypeSelect.value = radio.value;
+    });
+  });
+
   // --- Theme (dark mode) ---
   // theme-boot.js already applied the class before first paint; here we
   // only wire the toggle, persistence, and follow the OS when the user
@@ -157,14 +176,14 @@
   var addNewItem = function () {
     if (document.querySelectorAll('.item-row').length >= MAX_ITEMS) return;
     var itemRow = document.createElement('tr');
-    itemRow.classList.add('item-row');
+    itemRow.classList.add('item-row', 'border-b', 'border-rule');
     itemRow.innerHTML =
-      '<td class="p-2"><input type="text" data-i18n-ph="ui.itemDescriptionPh" placeholder="Item description" maxlength="54" data-i18n-aria="ui.itemDescriptionAria" aria-label="Item description" class="description w-full p-2 rounded-md invoice-input"></td>' +
-      '<td class="p-2"><input type="number" value="1" min="1" data-i18n-aria="ui.itemQuantityAria" aria-label="Quantity" class="quantity w-full p-2 text-center rounded-md invoice-input"></td>' +
-      '<td class="p-2"><input type="number" value="0.00" min="0" step="0.01" data-i18n-aria="ui.itemPriceAria" aria-label="Price" class="price w-full p-2 text-center rounded-md invoice-input"></td>' +
-      '<td class="p-2 text-center">' +
-      '<button type="button" data-i18n-aria="ui.removeItemAria" aria-label="Remove item" class="remove-item-btn text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">' +
-      '<svg class="w-5 h-5" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>' +
+      '<td class="py-2 pr-2 align-middle"><input type="text" data-i18n-ph="ui.itemDescriptionPh" placeholder="Item description" maxlength="54" data-i18n-aria="ui.itemDescriptionAria" aria-label="Item description" class="description invoice-input w-full rounded-md p-2"></td>' +
+      '<td class="py-2 px-2 align-middle"><input type="number" value="1" min="1" inputmode="decimal" data-i18n-aria="ui.itemQuantityAria" aria-label="Quantity" class="quantity invoice-input money w-full rounded-md p-2 text-center"></td>' +
+      '<td class="py-2 px-2 align-middle"><input type="number" value="0.00" min="0" step="0.01" inputmode="decimal" data-i18n-aria="ui.itemPriceAria" aria-label="Price" class="price invoice-input money w-full rounded-md p-2 text-center"></td>' +
+      '<td class="py-2 pl-2 align-middle text-center">' +
+      '<button type="button" data-i18n-aria="ui.removeItemAria" aria-label="Remove item" class="remove-item-btn rounded-md p-1.5 text-ink-soft transition-colors hover:text-accent">' +
+      '<svg class="h-5 w-5" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>' +
       '</button>' +
       '</td>';
     invoiceItemsContainer.appendChild(itemRow);
@@ -220,7 +239,7 @@
 
   var resetForm = function () {
     // keep a valid option selected (setting value='' leaves the <select> invalid)
-    document.getElementById('invoice-type').selectedIndex = 0;
+    setDocType(docTypeSelect.options[0].value);
     [
       'company-name',
       'company-address',
@@ -355,6 +374,7 @@
   // --- Initial setup ---
   addNewItem();
   applyLang(currentLang);
+  setDocType(docTypeSelect.value || docTypeSelect.options[0].value);
   document.getElementById('invoice-date').valueAsDate = new Date();
   updateTotals();
 })();

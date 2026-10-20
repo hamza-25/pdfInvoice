@@ -317,6 +317,60 @@ describe('submit behaviour (chunks 0.2 / 0.3 / 0.7)', () => {
   });
 });
 
+describe('document type segmented control (chunk R3)', () => {
+  it('mirrors a radio selection into the real <select> (the submitted value)', async () => {
+    const { window, document, calls } = await boot();
+    const select = document.getElementById('invoice-type') as HTMLSelectElement;
+
+    const quote = document.querySelector(
+      'input[name="doc-type"][value="QUOTE"]',
+    ) as HTMLInputElement;
+    quote.checked = true;
+    quote.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(select.value).toBe('QUOTE');
+
+    submit(window, document);
+    await flush();
+    const body = JSON.parse(calls[0].options.body as string);
+    expect(body.documentType).toBe('QUOTE');
+  });
+
+  it('starts on the first document type with that radio checked', async () => {
+    const { document } = await boot();
+    const select = document.getElementById('invoice-type') as HTMLSelectElement;
+    expect(select.value).toBe('SERVICE INVOICE');
+    const checked = document.querySelector('input[name="doc-type"]:checked') as HTMLInputElement;
+    expect(checked.value).toBe('SERVICE INVOICE');
+  });
+
+  it('resets the radios along with the select after a successful submit', async () => {
+    const { window, document } = await boot();
+    const quote = document.querySelector(
+      'input[name="doc-type"][value="QUOTE"]',
+    ) as HTMLInputElement;
+    quote.checked = true;
+    quote.dispatchEvent(new window.Event('change', { bubbles: true }));
+
+    submit(window, document);
+    await flush();
+
+    expect((document.getElementById('invoice-type') as HTMLSelectElement).value).toBe(
+      'SERVICE INVOICE',
+    );
+    const checked = document.querySelector('input[name="doc-type"]:checked') as HTMLInputElement;
+    expect(checked.value).toBe('SERVICE INVOICE');
+  });
+
+  it('exposes each segment as a labelled radio', async () => {
+    const { document } = await boot();
+    const radios = document.querySelectorAll('input[name="doc-type"]');
+    expect(radios).toHaveLength(4);
+    radios.forEach((radio) => {
+      expect(radio.getAttribute('aria-label')).toBeTruthy();
+    });
+  });
+});
+
 describe('accessibility (chunk 4.5)', () => {
   it('gives every form control an accessible name (label[for] or aria-label)', async () => {
     const { document } = await boot();
@@ -368,6 +422,16 @@ describe('accessibility (chunk 4.5)', () => {
     const css = fs.readFileSync(path.resolve(process.cwd(), 'src/styles/app.css'), 'utf8');
     expect(css).toContain(':focus-visible');
     expect(css).toContain('outline');
+  });
+
+  it('loads the display and UI typefaces and uses tabular figures for money (chunk R3)', async () => {
+    const head = fs.readFileSync(path.resolve(process.cwd(), 'views/partials/head.ejs'), 'utf8');
+    expect(head).toContain('Spectral');
+    expect(head).toContain('IBM+Plex+Sans');
+    expect(head).not.toContain('Inter');
+
+    const css = fs.readFileSync(path.resolve(process.cwd(), 'src/styles/app.css'), 'utf8');
+    expect(css).toMatch(/\.money\s*\{[^}]*tabular-nums/);
   });
 
   it('sets aria-busy on the submit button while the request is in flight', async () => {
