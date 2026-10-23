@@ -255,7 +255,7 @@ describe('submit behaviour (chunks 0.2 / 0.3 / 0.7)', () => {
 
     const btn = document.getElementById('submit-btn') as HTMLButtonElement;
     expect(btn.disabled).toBe(false);
-    expect(document.getElementById('submit-btn-label')!.textContent).toBe('Submit for Processing');
+    expect(document.getElementById('submit-btn-label')!.textContent).toBe(en['ui.submit']);
   });
 
   it('opens the PDF blob in a new tab for preview (chunk 4.4)', async () => {
@@ -520,7 +520,7 @@ describe('language switcher (chunk 5.3)', () => {
 
     clickLang(window, document, 'fr');
     expect(document.querySelector('h1')!.textContent).toBe('Créateur de documents professionnels');
-    expect(document.getElementById('submit-btn-label')!.textContent).toBe('Générer le document');
+    expect(document.getElementById('submit-btn-label')!.textContent).toBe(fr['ui.submit']);
     expect(document.querySelector('label[for="currency"]')!.textContent).toBe('Devise');
     expect(document.documentElement.lang).toBe('fr');
     expect(document.querySelector('.lang-btn[data-lang="fr"]')!.getAttribute('aria-pressed')).toBe(
@@ -592,7 +592,7 @@ describe('language switcher (chunk 5.3)', () => {
     submit(window, document);
     await flush();
 
-    expect(document.getElementById('submit-btn-label')!.textContent).toBe('Générer le document');
+    expect(document.getElementById('submit-btn-label')!.textContent).toBe(fr['ui.submit']);
     expect(document.getElementById('submit-btn')!.hasAttribute('aria-busy')).toBe(false);
   });
 
@@ -600,7 +600,142 @@ describe('language switcher (chunk 5.3)', () => {
     const { document } = await boot(undefined, { withoutI18N: true });
 
     expect(document.querySelector('h1')!.textContent).toBe('Professional Document Builder');
-    expect(document.getElementById('submit-btn-label')!.textContent).toBe('Submit for Processing');
+    expect(document.getElementById('submit-btn-label')!.textContent).toBe('Generate PDF');
+  });
+});
+
+describe('i18n & copy (chunk R7)', () => {
+  const clickLang = (window: JSDOM['window'], document: Document, lang: string) => {
+    const btn = document.querySelector(`.lang-btn[data-lang="${lang}"]`) as HTMLElement;
+    btn.dispatchEvent(new window.Event('click', { bubbles: true }));
+    return btn;
+  };
+
+  /** A successful generate that also reports the server's invoice number. */
+  const withInvoiceNumber = () => () =>
+    Promise.resolve({
+      ok: true,
+      status: 200,
+      blob: () => Promise.resolve(new Blob(['%PDF-1.3'], { type: 'application/pdf' })),
+      json: () => Promise.resolve({}),
+      headers: {
+        get: (name: string) => (name === 'X-Invoice-Number' ? 'INV-2026-0042' : null),
+      },
+    });
+
+  it('keeps the item counter in sync with the rows and the language', async () => {
+    const { window, document } = await boot();
+    const counter = document.getElementById('items-count')!;
+    const label = (dict: typeof en, count: number) =>
+      dict['ui.itemsOf'].replace('{count}', String(count));
+
+    expect(counter.textContent).toBe(label(en, 1));
+
+    (document.getElementById('add-item-btn') as HTMLElement).dispatchEvent(
+      new window.Event('click', { bubbles: true }),
+    );
+    expect(counter.textContent).toBe(label(en, 2));
+
+    clickLang(window, document, 'fr');
+    expect(counter.textContent).toBe(label(fr, 2));
+
+    clickLang(window, document, 'en');
+    expect(counter.textContent).toBe(label(en, 2));
+
+    (document.querySelector('.item-row .remove-item-btn') as HTMLElement).dispatchEvent(
+      new window.Event('click', { bubbles: true }),
+    );
+    expect(counter.textContent).toBe(label(en, 1));
+  });
+
+  it('numbers the stacked mobile item blocks and renumbers after removal', async () => {
+    const { window, document } = await boot();
+    const rowLabel = (n: number) =>
+      document.querySelectorAll('.item-row')[n]!.getAttribute('data-item-label');
+
+    expect(rowLabel(0)).toBe(en['ui.itemN'].replace('{n}', '1'));
+
+    (document.getElementById('add-item-btn') as HTMLElement).dispatchEvent(
+      new window.Event('click', { bubbles: true }),
+    );
+    expect(rowLabel(1)).toBe(en['ui.itemN'].replace('{n}', '2'));
+
+    clickLang(window, document, 'fr');
+    expect(rowLabel(1)).toBe(fr['ui.itemN'].replace('{n}', '2'));
+
+    // Removing the first block renumbers the survivor.
+    (document.querySelector('.item-row .remove-item-btn') as HTMLElement).dispatchEvent(
+      new window.Event('click', { bubbles: true }),
+    );
+    expect(document.querySelectorAll('.item-row')).toHaveLength(1);
+    expect(rowLabel(0)).toBe(fr['ui.itemN'].replace('{n}', '1'));
+  });
+
+  it('re-translates the success panel and the sheet after generating', async () => {
+    const { window, document } = await boot(withInvoiceNumber());
+    submit(window, document);
+    await flush();
+
+    const panel = document.getElementById('success-panel')!;
+    expect(panel.classList.contains('hidden')).toBe(false);
+    expect(panel.querySelector('.success-title')!.textContent).toBe(en['ui.successTitle']);
+    expect(document.getElementById('success-number')!.textContent).toBe(
+      `${en['pdf.invoice.idLabel']} INV-2026-0042`,
+    );
+
+    clickLang(window, document, 'fr');
+
+    expect(panel.querySelector('.success-title')!.textContent).toBe(fr['ui.successTitle']);
+    expect(panel.querySelector('.success-body')!.textContent).toBe(fr['ui.successBody']);
+    expect(document.getElementById('open-preview-btn')!.textContent).toBe(fr['ui.openPreview']);
+    expect(document.getElementById('download-again-btn')!.textContent).toBe(fr['ui.downloadAgain']);
+    expect(document.getElementById('new-document-btn')!.textContent).toBe(fr['ui.newDocument']);
+    expect(document.getElementById('success-number')!.textContent).toBe(
+      `${fr['pdf.invoice.idLabel']} INV-2026-0042`,
+    );
+    // Dynamic content follows too: the sheet, the counter and the CTA.
+    expect(document.getElementById('sheet')!.textContent).toContain(fr['pdf.billTo']);
+    expect(document.getElementById('items-count')!.textContent).toBe(
+      fr['ui.itemsOf'].replace('{count}', '1'),
+    );
+    expect(document.getElementById('submit-btn-label')!.textContent).toBe(fr['ui.submit']);
+  });
+
+  it('keeps the invoice number pinned to the document type that was generated', async () => {
+    const { window, document } = await boot(withInvoiceNumber());
+    const type = document.getElementById('invoice-type') as HTMLSelectElement;
+    type.value = 'QUOTE';
+
+    submit(window, document);
+    await flush();
+    expect(document.getElementById('success-number')!.textContent).toBe(
+      `${en['pdf.quote.idLabel']} INV-2026-0042`,
+    );
+
+    // Change the form to a receipt after generating (the PDF is still a quote).
+    const receipt = document.querySelector(
+      'input[name="doc-type"][value="RECEIPT"]',
+    ) as HTMLInputElement;
+    receipt.checked = true;
+    receipt.dispatchEvent(new window.Event('change', { bubbles: true }));
+
+    clickLang(window, document, 'fr');
+    expect(document.getElementById('success-number')!.textContent).toBe(
+      `${fr['pdf.quote.idLabel']} INV-2026-0042`,
+    );
+  });
+
+  it('leaves focus on the language toggle while the success panel is open', async () => {
+    const { window, document } = await boot(withInvoiceNumber());
+    submit(window, document);
+    await flush();
+    expect(document.activeElement).toBe(document.getElementById('success-panel'));
+
+    const frBtn = document.querySelector('.lang-btn[data-lang="fr"]') as HTMLElement;
+    frBtn.focus();
+    frBtn.dispatchEvent(new window.Event('click', { bubbles: true }));
+
+    expect(document.activeElement).toBe(frBtn);
   });
 });
 

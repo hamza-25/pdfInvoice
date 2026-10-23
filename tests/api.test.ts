@@ -60,8 +60,8 @@ describe('GET /i18n.js (chunk 5.3)', () => {
     expect(res.headers['content-type']).toContain('javascript');
     expect(res.text).toContain('window.I18N');
     expect(res.text).toContain('"ui.submit"');
-    expect(res.text).toContain('Générer le document'); // FR UI
-    expect(res.text).toContain('Submit for Processing'); // EN UI
+    expect(res.text).toContain('Générer le PDF'); // FR UI
+    expect(res.text).toContain('Generate PDF'); // EN UI
   });
 });
 

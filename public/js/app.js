@@ -19,6 +19,7 @@
   var openPreviewBtn = document.getElementById('open-preview-btn');
   var downloadAgainBtn = document.getElementById('download-again-btn');
   var newDocumentBtn = document.getElementById('new-document-btn');
+  var itemsCountEl = document.getElementById('items-count');
 
   // --- i18n (chunk 5.3): same dictionaries the server uses for PDFs ---
   var I18N = window.I18N || {};
@@ -70,6 +71,14 @@
     });
     document.documentElement.lang = lang;
     document.title = tUi('ui.pageTitle') || document.title;
+    // Re-label item blocks (mobile) and keep the "X of 15 items" counter current.
+    renumberItems();
+    updateItemsCounter();
+    // If a PDF was just generated, keep the success panel's document number in
+    // the active language (without re-capturing the type or stealing focus).
+    if (successPanel && !successPanel.classList.contains('hidden')) {
+      refreshSuccessNumber();
+    }
     // Re-render the sheet so its labels follow the language too. `renderSheet`
     // is a hoisted function declaration defined below, so it is always set.
     renderSheet();
@@ -189,12 +198,28 @@
     addItemBtn.disabled = atLimit;
     addItemBtn.classList.toggle('opacity-50', atLimit);
     document.getElementById('items-limit-hint').classList.toggle('hidden', !atLimit);
+    updateItemsCounter();
+  };
+
+  var updateItemsCounter = function () {
+    var count = document.querySelectorAll('.item-row').length;
+    if (itemsCountEl) itemsCountEl.textContent = tUi('ui.itemsOf', { count: count });
+  };
+
+  var renumberItems = function () {
+    document.querySelectorAll('.item-row').forEach(function (row, index) {
+      row.dataset.itemLabel = tUi('ui.itemN', { n: index + 1 });
+    });
   };
 
   var addNewItem = function () {
     if (document.querySelectorAll('.item-row').length >= MAX_ITEMS) return;
     var itemRow = document.createElement('tr');
     itemRow.classList.add('item-row', 'border-b', 'border-rule');
+    // Used by the mobile stacked layout (chunk R7): "Item N" above the block.
+    itemRow.dataset.itemLabel = tUi('ui.itemN', {
+      n: document.querySelectorAll('.item-row').length + 1,
+    });
     itemRow.innerHTML =
       '<td class="py-2 pr-2 align-middle" data-i18n-datalabel="ui.tableDescription" data-label="Description"><input type="text" data-i18n-ph="ui.itemDescriptionPh" placeholder="Item description" maxlength="54" data-i18n-aria="ui.itemDescriptionAria" aria-label="Item description" class="description invoice-input w-full rounded-md p-2"></td>' +
       '<td class="py-2 px-2 align-middle" data-i18n-datalabel="ui.tableQty" data-label="Qty"><input type="number" value="1" min="1" inputmode="decimal" data-i18n-aria="ui.itemQuantityAria" aria-label="Quantity" class="quantity invoice-input money w-full rounded-md p-2 text-center"></td>' +
@@ -206,6 +231,7 @@
       '</td>';
     invoiceItemsContainer.appendChild(itemRow);
     applyLang(currentLang); // translate the freshly added row
+    renumberItems();
     updateTotals();
     updateAddItemState();
   };
@@ -240,6 +266,7 @@
   invoiceItemsContainer.addEventListener('click', function (e) {
     if (e.target.closest('.remove-item-btn')) {
       e.target.closest('.item-row').remove();
+      renumberItems();
       updateTotals();
       updateAddItemState();
     }
@@ -740,6 +767,8 @@
   // cost zero extra POSTs. Object URLs are tracked and released deterministically.
   var lastPdfBlob = null;
   var objectUrls = [];
+  var lastInvoiceNumber = '';
+  var lastInvoiceDocType = 'SERVICE INVOICE';
 
   var createTrackedUrl = function () {
     var url = window.URL.createObjectURL(lastPdfBlob);
@@ -792,18 +821,28 @@
     downloadUrl(createTrackedUrl());
   };
 
+  /** Re-draw only the invoice-number line in the active language. Used by
+   *  applyLang() so a language switch never re-captures the document type or
+   *  moves focus out of the language toggle. */
+  var refreshSuccessNumber = function () {
+    if (!successNumber) return;
+    if (lastInvoiceNumber) {
+      var meta = DOC_TITLES[lastInvoiceDocType] || DEFAULT_DOC;
+      successNumber.textContent = tUi(meta.id) + ' ' + lastInvoiceNumber;
+      successNumber.classList.remove('hidden');
+    } else {
+      successNumber.textContent = '';
+      successNumber.classList.add('hidden');
+    }
+  };
+
   var showSuccess = function (invoiceNumber) {
     if (!successPanel) return;
-    if (successNumber) {
-      if (invoiceNumber) {
-        var meta = DOC_TITLES[docTypeSelect.value] || DEFAULT_DOC;
-        successNumber.textContent = tUi(meta.id) + ' ' + invoiceNumber;
-        successNumber.classList.remove('hidden');
-      } else {
-        successNumber.textContent = '';
-        successNumber.classList.add('hidden');
-      }
+    if (invoiceNumber) {
+      lastInvoiceNumber = invoiceNumber;
+      lastInvoiceDocType = docTypeSelect.value;
     }
+    refreshSuccessNumber();
     successPanel.classList.remove('hidden');
     successPanel.focus();
   };
@@ -844,6 +883,8 @@
     clearFieldErrors();
     hideSuccess();
     lastPdfBlob = null;
+    lastInvoiceNumber = '';
+    lastInvoiceDocType = 'SERVICE INVOICE';
     releaseObjectUrls();
 
     updateTotals();

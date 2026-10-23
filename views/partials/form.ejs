@@ -130,7 +130,11 @@
     <!-- Items -->
     <section>
         <div class="flex items-baseline justify-between gap-4">
-            <h2 data-i18n="ui.itemsHeading" class="section-title">Items (max: 15)</h2>
+            <div class="flex items-baseline gap-3">
+                <h2 data-i18n="ui.itemsHeading" class="section-title">Items</h2>
+                <!-- Live counter (chunk R7); app.js fills it from ui.itemsOf. -->
+                <span id="items-count" class="text-sm text-ink-soft">1 of 15 items</span>
+            </div>
             <button type="button" id="add-item-btn" class="inline-flex items-center gap-1 text-sm font-semibold text-accent hover:underline disabled:cursor-not-allowed disabled:opacity-50 disabled:no-underline">
                 <svg class="h-4 w-4" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                 <span data-i18n="ui.addItem">Add Item</span>
@@ -201,7 +205,7 @@
              the sticky pane shows it, so the button disappears there. -->
         <button id="preview-btn" type="button" data-i18n="ui.preview" class="btn-secondary rounded-md px-5 py-3 text-base">Preview</button>
         <button id="submit-btn" type="submit" class="btn-primary rounded-md px-8 py-3 text-base">
-            <span id="submit-btn-label" data-i18n="ui.submit">Submit for Processing</span>
+            <span id="submit-btn-label" data-i18n="ui.submit">Generate PDF</span>
         </button>
     </section>
 </form>

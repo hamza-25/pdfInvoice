@@ -69,7 +69,9 @@ export const fr: Dictionary = {
   'ui.dateLabel': 'Date',
   'ui.dueDateLabel': "Date d'échéance",
   'ui.currencyLabel': 'Devise',
-  'ui.itemsHeading': 'Articles (max : 15)',
+  'ui.itemsHeading': 'Articles',
+  'ui.itemsOf': '{count} sur 15 articles',
+  'ui.itemN': 'Article {n}',
   'ui.tableDescription': 'Description',
   'ui.tableQty': 'Qté',
   'ui.tablePrice': 'Prix',
@@ -90,14 +92,28 @@ export const fr: Dictionary = {
   'ui.notesHeading': 'Notes',
   'ui.notesLabel': 'Notes',
   'ui.notesPh': 'Merci pour votre confiance !',
-  'ui.submit': 'Générer le document',
+  'ui.submit': 'Générer le PDF',
   'ui.processing': 'Traitement en cours...',
   'ui.toastPreview': 'Document ouvert dans un nouvel onglet',
   'ui.toastDownloaded': 'Document généré avec succès',
   'ui.errorGeneric': 'Une erreur est survenue, veuillez réessayer.',
   'ui.errorMore': '…et {count} de plus',
 
-  // API validation errors
+  // ---- Aperçu en direct (chunk R5) ----
+  'ui.preview': 'Aperçu',
+  'ui.previewOpen': "Ouvrir l'aperçu complet",
+  'ui.previewOpenAria': "Ouvrir l'aperçu complet",
+  'ui.previewCloseAria': "Fermer l'aperçu",
+
+  // ---- Flux de réussite (chunk R6) ----
+  'ui.successTitle': 'Document prêt',
+  'ui.successBody':
+    'Votre PDF a été généré. Ouvrez-le dans un nouvel onglet, téléchargez-le à nouveau ou créez un nouveau document.',
+  'ui.openPreview': 'Ouvrir l’aperçu',
+  'ui.downloadAgain': 'Télécharger à nouveau',
+  'ui.newDocument': 'Nouveau document',
+
+  // ---- Erreurs de validation API (chunk 5.4) ----
   'error.documentTypeRequired': 'Le type de document est requis',
   'error.documentTypeMax': 'Le type de document doit contenir au plus 60 caractères',
   'error.companyObject': 'La société doit être un objet',
