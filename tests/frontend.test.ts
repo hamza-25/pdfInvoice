@@ -916,6 +916,37 @@ describe('live A4 sheet (chunk R5)', () => {
     expect(document.activeElement).toBe(previewBtn);
   });
 
+  it('keeps Tab inside the preview dialog while it is open', async () => {
+    const { window, document } = await boot();
+    const modal = document.getElementById('preview-modal')!;
+    const close = document.getElementById('preview-close')!;
+
+    (document.getElementById('preview-btn') as HTMLElement).dispatchEvent(
+      new window.Event('click', { bubbles: true }),
+    );
+    expect(document.activeElement).toBe(close);
+
+    const forward = new window.KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+    });
+    document.dispatchEvent(forward);
+    expect(forward.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(close);
+
+    const backward = new window.KeyboardEvent('keydown', {
+      key: 'Tab',
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    document.dispatchEvent(backward);
+    expect(backward.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(close);
+    expect(modal.classList.contains('hidden')).toBe(false);
+  });
+
   it('opens the preview from the desktop "Open full preview" control too', async () => {
     const { window, document } = await boot();
     const modal = document.getElementById('preview-modal')!;

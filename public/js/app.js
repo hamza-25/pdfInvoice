@@ -225,7 +225,7 @@
       '<td class="py-2 px-2 align-middle" data-i18n-datalabel="ui.tableQty" data-label="Qty"><input type="number" value="1" min="1" inputmode="decimal" data-i18n-aria="ui.itemQuantityAria" aria-label="Quantity" class="quantity invoice-input money w-full rounded-md p-2 text-center"></td>' +
       '<td class="py-2 px-2 align-middle" data-i18n-datalabel="ui.tablePrice" data-label="Price"><input type="number" value="0.00" min="0" step="0.01" inputmode="decimal" data-i18n-aria="ui.itemPriceAria" aria-label="Price" class="price invoice-input money w-full rounded-md p-2 text-center"></td>' +
       '<td class="py-2 pl-2 align-middle text-center item-actions">' +
-      '<button type="button" data-i18n-aria="ui.removeItemAria" aria-label="Remove item" class="remove-item-btn rounded-md p-1.5 text-ink-soft transition-colors hover:text-accent">' +
+      '<button type="button" data-i18n-aria="ui.removeItemAria" aria-label="Remove item" class="remove-item-btn rounded-md p-1.5 text-ink-soft transition-colors hover:text-accent-ink">' +
       '<svg class="h-5 w-5" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>' +
       '</button>' +
       '</td>';
@@ -627,8 +627,32 @@
       if (e.target === previewModal) closePreview();
     });
   }
+  var FOCUSABLE_SELECTOR =
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  // Keep Tab inside the dialog while it is open (R9 keyboard pass). The sheet
+  // has a single focusable control, so Tab/Shift+Tab stay on the close button.
+  var trapPreviewFocus = function (e) {
+    if (e.key !== 'Tab' || !previewModal || previewModal.classList.contains('hidden')) return;
+    var focusables = previewModal.querySelectorAll(FOCUSABLE_SELECTOR);
+    if (!focusables.length) return;
+    var first = focusables[0];
+    var last = focusables[focusables.length - 1];
+    var active = document.activeElement;
+    if (e.shiftKey) {
+      if (active === first || !previewModal.contains(active)) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else if (active === last || !previewModal.contains(active)) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
+
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') closePreview();
+    trapPreviewFocus(e);
   });
 
   // Re-render the sheet whenever anything it shows changes.

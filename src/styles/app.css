@@ -32,6 +32,10 @@
   --color-accent: #9e2b25;
   --color-accent-hover: #87231e;
   --color-accent-tint: #f7edec; /* error / inline-state background */
+  /* Accent as *text on the page background*. Dark mode needs a lighter shade
+   * than the button fill: white-on-accent and accent-on-night-desk cannot both
+   * reach 4.5:1 with one value, so text uses this token and fills use accent. */
+  --color-accent-ink: #9e2b25;
 
   /* ---- Ledger green: success states only ---- */
   --color-ledger: #2c6e49;
@@ -55,6 +59,7 @@ html.dark {
   --color-accent: #c15049;
   --color-accent-hover: #b34740;
   --color-accent-tint: #2a1c1b;
+  --color-accent-ink: #e3918b; /* 7.35:1 on --color-paper in dark mode */
   --color-ledger: #57a075;
 }
 
@@ -242,11 +247,24 @@ html.dark {
     pointer-events: none;
   }
 
-  /* Toasts animate in/out via these two utility pairs. */
-  #notification-toast {
+  /* Toasts: same paper-and-ink language as inline errors — hairline + a single
+     colored rule, no fill, no shadow. Both transition so one CSS rule drives
+     the showToast() opacity/translate utilities. */
+  .toast {
+    padding: 0.75rem 1.25rem;
+    border: 1px solid var(--color-rule);
+    border-left: 3px solid var(--color-ledger);
+    border-radius: 6px;
+    background-color: color-mix(in srgb, var(--color-ledger) 6%, var(--color-paper));
+    color: var(--color-ink);
     transition:
       opacity 0.3s,
       transform 0.3s;
+  }
+  .toast-error {
+    border-left-color: var(--color-accent);
+    background-color: var(--color-accent-tint);
+    color: var(--color-accent-ink);
   }
 
   /* EN/FR switcher: the active state follows aria-pressed, which applyLang()
@@ -363,7 +381,7 @@ html.dark {
   .action-bar-total .action-bar-value {
     font-size: 1.125rem;
     font-weight: 600;
-    color: var(--color-accent);
+    color: var(--color-accent-ink);
   }
 
   /* On wide screens the bar is just the submit section, inline at the end. */
@@ -404,7 +422,7 @@ html.dark {
     gap: 0.25rem;
     font-size: 0.8125rem;
     font-weight: 600;
-    color: var(--color-accent);
+    color: var(--color-accent-ink);
   }
   .sheet-open-btn:hover {
     text-decoration: underline;
@@ -667,7 +685,7 @@ html.dark {
     margin-top: 0.25rem;
     font-size: 0.8125rem;
     line-height: 1.4;
-    color: var(--color-accent);
+    color: var(--color-accent-ink);
   }
   .grid > .field-error {
     grid-column: 1 / -1;
@@ -733,7 +751,7 @@ html.dark {
     color: var(--color-ink-soft);
   }
   .quiet-action:hover {
-    color: var(--color-accent);
+    color: var(--color-accent-ink);
     text-decoration: underline;
   }
 }
