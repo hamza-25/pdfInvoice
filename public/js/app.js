@@ -14,6 +14,11 @@
   var submitBtn = document.getElementById('submit-btn');
   var submitBtnLabel = document.getElementById('submit-btn-label');
   var currencySelect = document.getElementById('currency');
+  var successPanel = document.getElementById('success-panel');
+  var successNumber = document.getElementById('success-number');
+  var openPreviewBtn = document.getElementById('open-preview-btn');
+  var downloadAgainBtn = document.getElementById('download-again-btn');
+  var newDocumentBtn = document.getElementById('new-document-btn');
 
   // --- i18n (chunk 5.3): same dictionaries the server uses for PDFs ---
   var I18N = window.I18N || {};
@@ -603,8 +608,261 @@
   form.addEventListener('input', renderSheet);
   form.addEventListener('change', renderSheet);
 
+  // --- Inline validation errors (chunk R6) -----------------------------------
+  // The server's message is the source of truth (it is already language-aware);
+  // each `errors[].path` is mapped to the control that produced it. The message
+  // sits under that control, the control gets aria-invalid/aria-describedby, and
+  // the first invalid field in DOM order is focused. The toast stays as summary.
+  var FIELD_IDS = {
+    'company.name': 'company-name',
+    'company.address': 'company-address',
+    'company.city': 'company-city',
+    'company.phone': 'company-phone',
+    'company.email': 'company-email',
+    'client.name': 'client-name',
+    'client.address': 'client-address',
+    'client.city': 'client-city',
+    'client.phone': 'client-phone',
+    'client.email': 'client-email',
+    issueDate: 'invoice-date',
+    dueDate: 'due-date',
+    paymentType: 'payment-type',
+    notes: 'notes',
+    taxRate: 'tax-rate',
+    currency: 'currency',
+  };
+  var ITEM_SELECTORS = { description: '.description', quantity: '.quantity', price: '.price' };
+  var fieldErrors = [];
+  var errorSeq = 0;
+
+  var fieldForPath = function (path) {
+    if (path === 'documentType') {
+      // The real <select> is visually hidden; mark/focus the checked segment.
+      return document.querySelector('input[name="doc-type"]:checked');
+    }
+    var item = /^items(?:\[(\d+)\]|\.(\d+))\.([a-z]+)$/.exec(path || '');
+    if (item) {
+      var index = Number(item[1] != null ? item[1] : item[2]);
+      var row = document.querySelectorAll('.item-row')[index];
+      var selector = ITEM_SELECTORS[item[3]];
+      return row && selector ? row.querySelector(selector) : null;
+    }
+    if (path === 'items') {
+      // Array-level error (too many items, wrong shape): anchor on row one.
+      return document.querySelector('.item-row .description');
+    }
+    var id = FIELD_IDS[path];
+    return id ? document.getElementById(id) : null;
+  };
+
+  var clearFieldErrors = function () {
+    fieldErrors.forEach(function (entry) {
+      entry.el.remove();
+      entry.field.removeAttribute('aria-invalid');
+      entry.field.removeAttribute('aria-describedby');
+    });
+    fieldErrors = [];
+  };
+
+  var clearFieldError = function (field) {
+    var kept = [];
+    fieldErrors.forEach(function (entry) {
+      if (entry.field === field) {
+        entry.el.remove();
+        entry.field.removeAttribute('aria-invalid');
+        entry.field.removeAttribute('aria-describedby');
+      } else {
+        kept.push(entry);
+      }
+    });
+    fieldErrors = kept;
+  };
+
+  var insertFieldError = function (field, message) {
+    var el = document.createElement('p');
+    el.className = 'field-error';
+    errorSeq += 1;
+    el.id = 'field-error-' + errorSeq;
+    el.textContent = message;
+
+    var cell = field.closest && field.closest('td');
+    if (cell) {
+      cell.appendChild(el);
+    } else if (field.name === 'doc-type' && field.closest('.seg')) {
+      field.closest('.seg').insertAdjacentElement('afterend', el);
+    } else if ((field.id === 'tax-rate' || field.id === 'currency') && field.closest('section')) {
+      // These live in flex/grid rows — hang the message off the whole row so
+      // the control alignment stays intact.
+      field.closest('section').insertAdjacentElement('afterend', el);
+    } else if (field.parentElement) {
+      field.parentElement.insertAdjacentElement('afterend', el);
+    } else {
+      field.insertAdjacentElement('afterend', el);
+    }
+
+    field.setAttribute('aria-invalid', 'true');
+    field.setAttribute('aria-describedby', el.id);
+    fieldErrors.push({ field: field, el: el });
+  };
+
+  /** Render every server field error and focus the first invalid control. */
+  var applyFieldErrors = function (errors) {
+    clearFieldErrors();
+    var first = null;
+    errors.forEach(function (error) {
+      if (!error || !error.path || !error.msg) return;
+      var field = fieldForPath(error.path);
+      if (!field) return;
+      insertFieldError(field, error.msg);
+      if (
+        !first ||
+        (first.compareDocumentPosition(field) & window.Node.DOCUMENT_POSITION_PRECEDING) !== 0
+      ) {
+        first = field;
+      }
+    });
+    if (first && typeof first.focus === 'function') first.focus();
+  };
+
+  // Editing a field clears its error immediately (the server will re-check on
+  // the next submit).
+  var clearErrorOnEdit = function (e) {
+    var field = e.target;
+    if (field && field.getAttribute && field.getAttribute('aria-invalid') === 'true') {
+      clearFieldError(field);
+    }
+  };
+  form.addEventListener('input', clearErrorOnEdit);
+  form.addEventListener('change', clearErrorOnEdit);
+
+  // --- Success flow (chunk R6) -----------------------------------------------
+  // The generated blob stays in memory, so "Open preview" / "Download again"
+  // cost zero extra POSTs. Object URLs are tracked and released deterministically.
+  var lastPdfBlob = null;
+  var objectUrls = [];
+
+  var createTrackedUrl = function () {
+    var url = window.URL.createObjectURL(lastPdfBlob);
+    objectUrls.push(url);
+    return url;
+  };
+
+  var revokeUrl = function (url) {
+    try {
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      /* ignore */
+    }
+    objectUrls = objectUrls.filter(function (u) {
+      return u !== url;
+    });
+  };
+
+  var releaseObjectUrls = function () {
+    objectUrls.slice().forEach(revokeUrl);
+  };
+
+  var downloadUrl = function (url) {
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'invoice.pdf';
+    a.click();
+    revokeUrl(url);
+  };
+
+  /** Open a stored blob in a new tab; fall back to a download if popups block. */
+  var openPdf = function (blob) {
+    lastPdfBlob = blob;
+    var url = createTrackedUrl();
+    var tab = window.open(url, '_blank');
+    if (tab) {
+      // Give the new tab time to start loading the blob, then free it.
+      setTimeout(function () {
+        revokeUrl(url);
+      }, 60000);
+      showToast(document.getElementById('notification-toast'), tUi('ui.toastPreview'));
+    } else {
+      downloadUrl(url);
+      showToast(document.getElementById('notification-toast'), tUi('ui.toastDownloaded'));
+    }
+  };
+
+  var downloadAgain = function () {
+    if (!lastPdfBlob) return;
+    downloadUrl(createTrackedUrl());
+  };
+
+  var showSuccess = function (invoiceNumber) {
+    if (!successPanel) return;
+    if (successNumber) {
+      if (invoiceNumber) {
+        var meta = DOC_TITLES[docTypeSelect.value] || DEFAULT_DOC;
+        successNumber.textContent = tUi(meta.id) + ' ' + invoiceNumber;
+        successNumber.classList.remove('hidden');
+      } else {
+        successNumber.textContent = '';
+        successNumber.classList.add('hidden');
+      }
+    }
+    successPanel.classList.remove('hidden');
+    successPanel.focus();
+  };
+
+  var hideSuccess = function () {
+    if (successPanel) successPanel.classList.add('hidden');
+  };
+
+  /** Explicit reset — the only path that wipes the form (chunk R6). */
+  var newDocument = function () {
+    [
+      'company-name',
+      'company-address',
+      'company-city',
+      'company-phone',
+      'company-email',
+      'client-name',
+      'client-address',
+      'client-city',
+      'client-phone',
+      'client-email',
+      'payment-type',
+      'notes',
+    ].forEach(function (id) {
+      var field = document.getElementById(id);
+      if (field) field.value = '';
+    });
+
+    document.getElementById('invoice-date').valueAsDate = new Date();
+    document.getElementById('due-date').value = '';
+    document.getElementById('tax-rate').value = '0';
+    currencySelect.value = 'USD';
+    setDocType(docTypeSelect.options[0].value);
+
+    invoiceItemsContainer.innerHTML = '';
+    addNewItem(); // one empty row, correctly labelled for the current language
+
+    clearFieldErrors();
+    hideSuccess();
+    lastPdfBlob = null;
+    releaseObjectUrls();
+
+    updateTotals();
+    renderSheet();
+    document.getElementById('company-name').focus();
+  };
+
+  if (openPreviewBtn) {
+    openPreviewBtn.addEventListener('click', function () {
+      if (lastPdfBlob) openPdf(lastPdfBlob);
+    });
+  }
+  if (downloadAgainBtn) downloadAgainBtn.addEventListener('click', downloadAgain);
+  if (newDocumentBtn) newDocumentBtn.addEventListener('click', newDocument);
+
   form.addEventListener('submit', function (e) {
     e.preventDefault(); // stop native form submission (page navigation)
+    clearFieldErrors();
+    hideSuccess();
     submitBtnLabel.textContent = tUi('ui.processing');
     submitBtn.disabled = true;
     submitBtn.setAttribute('aria-busy', 'true');
@@ -623,6 +881,9 @@
             .then(function (errData) {
               var message = tUi('ui.errorGeneric');
               if (errData.errors && errData.errors.length) {
+                // Field-level messages (already localised by the server) + a
+                // compact toast summary (first 3 + count).
+                applyFieldErrors(errData.errors);
                 var msgs = errData.errors.map(function (err) {
                   return err.msg;
                 });
@@ -642,29 +903,21 @@
               throw new Error(tUi('ui.errorGeneric'));
             });
         }
-        return res.blob();
+        var invoiceNumber =
+          res.headers && typeof res.headers.get === 'function'
+            ? res.headers.get('X-Invoice-Number') || ''
+            : '';
+        return res.blob().then(function (blob) {
+          return { blob: blob, number: invoiceNumber };
+        });
       })
-      .then(function (blob) {
-        var url = window.URL.createObjectURL(blob);
-        var preview = window.open(url, '_blank');
-
-        if (preview) {
-          // Give the new tab time to start loading the blob.
-          setTimeout(function () {
-            window.URL.revokeObjectURL(url);
-          }, 60000);
-          showToast(document.getElementById('notification-toast'), tUi('ui.toastPreview'));
-        } else {
-          // Popup blocked — fall back to a direct download.
-          var a = document.createElement('a');
-          a.href = url;
-          a.download = 'invoice.pdf';
-          a.click();
-          window.URL.revokeObjectURL(url);
-          showToast(document.getElementById('notification-toast'), tUi('ui.toastDownloaded'));
-        }
+      .then(function (result) {
+        // Auto-open as before, then offer the follow-up actions. The blob is
+        // kept, so neither button below re-submits the form.
+        openPdf(result.blob);
+        showSuccess(result.number);
         // Form data is preserved (locked decision #3): the sheet still mirrors
-        // it and the success panel arrives in R6.
+        // it and the user can tweak + regenerate.
       })
       .catch(function (err) {
         showToast(

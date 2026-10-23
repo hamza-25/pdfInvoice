@@ -95,6 +95,15 @@ describe('POST /pdf/invoice-generate — happy path', () => {
     expect(text).toContain('22.00 $'); // grand total
   });
 
+  it('exposes the generated document number in X-Invoice-Number (chunk R6)', async () => {
+    const res = await postInvoice(validPayload);
+
+    const number = res.headers['x-invoice-number'];
+    expect(number).toMatch(/^INV-\d{4}-\d{4}$/);
+    // The same number is printed in the PDF header.
+    expect(extractPdfText(res.body)).toContain(number);
+  });
+
   it('handles numeric quantity/price directly (chunk 1.2 type contract)', async () => {
     const res = await postInvoice(validPayload);
     expect(res.status).toBe(200);

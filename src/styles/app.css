@@ -646,4 +646,81 @@ html.dark {
     padding: 1rem;
     background-color: color-mix(in srgb, var(--color-ink) 6%, var(--color-paper));
   }
+
+  /* ---- Inline field errors (chunk R6) --------------------------------------
+     A hairline-of-red under the offending control. The message itself is the
+     server's (already language-aware); the accent marks the field state only. */
+  .field-error {
+    margin-top: 0.25rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--color-accent);
+  }
+  .grid > .field-error {
+    grid-column: 1 / -1;
+  }
+  .seg + .field-error {
+    margin-top: 0.5rem;
+  }
+  .invoice-input[aria-invalid='true'] {
+    border-color: var(--color-accent);
+    background-color: var(--color-accent-tint);
+  }
+
+  /* ---- Success panel (chunk R6): a stamped notice, not a card --------------
+     Ledger green appears here and nowhere else. Rules, no shadow, no radius. */
+  .success-panel {
+    padding: 1rem 1.25rem;
+    border-block: 1px solid var(--color-rule);
+    border-left: 3px solid var(--color-ledger);
+    background-color: color-mix(in srgb, var(--color-ledger) 6%, var(--color-paper));
+    scroll-margin-top: 5rem;
+  }
+  .success-panel:focus-visible {
+    outline: 2px solid var(--color-ledger);
+    outline-offset: 2px;
+  }
+  .success-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .success-mark {
+    color: var(--color-ledger);
+    font-weight: 700;
+  }
+  .success-title {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+  .success-body {
+    margin-top: 0.125rem;
+    font-size: 0.9375rem;
+    color: var(--color-ink-soft);
+  }
+  .success-number {
+    margin-top: 0.25rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .success-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.875rem;
+    padding-left: 1.75rem;
+  }
+  .quiet-action {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-ink-soft);
+  }
+  .quiet-action:hover {
+    color: var(--color-accent);
+    text-decoration: underline;
+  }
 }

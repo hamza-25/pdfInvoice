@@ -827,6 +827,259 @@ describe('live A4 sheet (chunk R5)', () => {
   });
 });
 
+describe('validation errors mapped to fields (chunk R6)', () => {
+  type ServerError = { path: string; msg: string };
+  const errorResponse = (errors: ServerError[]) => () =>
+    Promise.resolve({
+      ok: false,
+      status: 400,
+      json: () => Promise.resolve({ errors }),
+    });
+
+  it('shows the server message under the field, marks it invalid and focuses it', async () => {
+    const { window, document } = await boot(
+      errorResponse([{ path: 'company.name', msg: 'Company name is required' }]),
+    );
+
+    submit(window, document);
+    await flush();
+
+    const field = document.getElementById('company-name') as HTMLInputElement;
+    expect(field.getAttribute('aria-invalid')).toBe('true');
+    const describedBy = field.getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+    const message = document.getElementById(describedBy!)!;
+    expect(message.textContent).toBe('Company name is required');
+    expect(message.className).toContain('field-error');
+    expect(document.activeElement).toBe(field);
+
+    // The toast remains the summary.
+    expect(document.getElementById('notification-toast-error')!.textContent).toContain(
+      'Company name is required',
+    );
+  });
+
+  it('maps item errors to the offending row and index', async () => {
+    const { window, document } = await boot(
+      errorResponse([{ path: 'items[0].price', msg: 'Price must be a number' }]),
+    );
+    (document.getElementById('add-item-btn') as HTMLElement).dispatchEvent(
+      new window.Event('click', { bubbles: true }),
+    );
+
+    submit(window, document);
+    await flush();
+
+    const rows = document.querySelectorAll('.item-row');
+    expect(rows[0].querySelector('.price')!.getAttribute('aria-invalid')).toBe('true');
+    expect(rows[1].querySelector('.price')!.getAttribute('aria-invalid')).toBeNull();
+    expect(rows[0].textContent).toContain('Price must be a number');
+  });
+
+  it('focuses the first invalid field in DOM order, not server order', async () => {
+    const { window, document } = await boot(
+      errorResponse([
+        { path: 'client.email', msg: 'Client email is invalid' },
+        { path: 'company.name', msg: 'Company name is required' },
+      ]),
+    );
+
+    submit(window, document);
+    await flush();
+
+    expect(document.activeElement).toBe(document.getElementById('company-name'));
+    expect(document.getElementById('client-email')!.getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('maps taxRate and currency errors to their controls', async () => {
+    const { window, document } = await boot(
+      errorResponse([
+        { path: 'taxRate', msg: 'Tax rate must be a number' },
+        { path: 'currency', msg: 'Currency is invalid' },
+      ]),
+    );
+
+    submit(window, document);
+    await flush();
+
+    for (const id of ['tax-rate', 'currency']) {
+      const field = document.getElementById(id)!;
+      expect(field.getAttribute('aria-invalid')).toBe('true');
+      const msg = document.getElementById(field.getAttribute('aria-describedby')!)!;
+      expect(msg.className).toContain('field-error');
+    }
+  });
+
+  it('clears a field error as soon as the user edits the field', async () => {
+    const { window, document } = await boot(
+      errorResponse([{ path: 'company.name', msg: 'Required' }]),
+    );
+
+    submit(window, document);
+    await flush();
+    const field = document.getElementById('company-name') as HTMLInputElement;
+    expect(field.getAttribute('aria-invalid')).toBe('true');
+
+    field.value = 'Acme';
+    field.dispatchEvent(new window.Event('input', { bubbles: true }));
+
+    expect(field.getAttribute('aria-invalid')).toBeNull();
+    expect(field.getAttribute('aria-describedby')).toBeNull();
+    expect(document.querySelector('.field-error')).toBeNull();
+  });
+
+  it('replaces previous errors on the next submit and hides the success panel', async () => {
+    let shouldFail = true;
+    const { window, document } = await boot(() =>
+      shouldFail
+        ? Promise.resolve({
+            ok: false,
+            status: 400,
+            json: () => Promise.resolve({ errors: [{ path: 'company.name', msg: 'Required' }] }),
+          })
+        : Promise.resolve({
+            ok: true,
+            status: 200,
+            blob: () => Promise.resolve({}),
+            json: () => Promise.resolve({}),
+          }),
+    );
+
+    submit(window, document);
+    await flush();
+    expect(document.querySelectorAll('.field-error').length).toBe(1);
+
+    shouldFail = false;
+    submit(window, document);
+    await flush();
+
+    expect(document.querySelectorAll('.field-error')).toHaveLength(0);
+    expect(document.getElementById('company-name')!.getAttribute('aria-invalid')).toBeNull();
+    expect(document.getElementById('success-panel')!.classList.contains('hidden')).toBe(false);
+  });
+});
+
+describe('success panel (chunk R6)', () => {
+  it('appears after a generate and keeps the form data', async () => {
+    const { window, document } = await boot();
+    const name = document.getElementById('company-name') as HTMLInputElement;
+    name.value = 'Acme';
+    name.dispatchEvent(new window.Event('input', { bubbles: true }));
+
+    submit(window, document);
+    await flush();
+
+    const panel = document.getElementById('success-panel')!;
+    expect(panel.classList.contains('hidden')).toBe(false);
+    expect(document.activeElement).toBe(panel);
+    expect(name.value).toBe('Acme'); // locked decision #3
+  });
+
+  it('Download again re-uses the stored blob with zero extra POSTs', async () => {
+    const { window, document, calls, anchorClicks } = await boot();
+    submit(window, document);
+    await flush();
+    expect(calls.length).toBe(1);
+    expect(anchorClicks()).toBe(0);
+
+    (document.getElementById('download-again-btn') as HTMLElement).dispatchEvent(
+      new window.Event('click', { bubbles: true }),
+    );
+
+    expect(calls.length).toBe(1); // no new request
+    expect(anchorClicks()).toBe(1); // downloaded from the in-memory blob
+  });
+
+  it('Open preview re-opens the stored blob without another POST', async () => {
+    const { window, document, calls, openCalls } = await boot();
+    submit(window, document);
+    await flush();
+    expect(openCalls.length).toBe(1); // the automatic post-generate open
+
+    (document.getElementById('open-preview-btn') as HTMLElement).dispatchEvent(
+      new window.Event('click', { bubbles: true }),
+    );
+
+    expect(calls.length).toBe(1);
+    expect(openCalls.length).toBe(2);
+  });
+
+  it('a second generate with an edit is exactly one more POST', async () => {
+    const { window, document, calls } = await boot();
+    submit(window, document);
+    await flush();
+    expect(calls.length).toBe(1);
+
+    const name = document.getElementById('company-name') as HTMLInputElement;
+    name.value = 'Edited';
+    name.dispatchEvent(new window.Event('input', { bubbles: true }));
+
+    submit(window, document);
+    await flush();
+
+    expect(calls.length).toBe(2);
+    expect(JSON.parse(calls[1].options.body as string).company.name).toBe('Edited');
+  });
+
+  it('shows the X-Invoice-Number header when the server sends one', async () => {
+    const { window, document } = await boot(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: () => Promise.resolve(new Blob(['%PDF-1.3'], { type: 'application/pdf' })),
+        json: () => Promise.resolve({}),
+        headers: {
+          get: (name: string) => (name === 'X-Invoice-Number' ? 'INV-2026-0007' : null),
+        },
+      }),
+    );
+
+    submit(window, document);
+    await flush();
+
+    const number = document.getElementById('success-number')!;
+    expect(number.classList.contains('hidden')).toBe(false);
+    expect(number.textContent).toContain(en['pdf.invoice.idLabel']);
+    expect(number.textContent).toContain('INV-2026-0007');
+  });
+
+  it('New document resets the form, dismisses the panel and releases the blob', async () => {
+    const { window, document, anchorClicks } = await boot();
+    const expectedDate = (document.getElementById('invoice-date') as HTMLInputElement).value;
+
+    const name = document.getElementById('company-name') as HTMLInputElement;
+    name.value = 'Acme';
+    name.dispatchEvent(new window.Event('input', { bubbles: true }));
+    (document.getElementById('add-item-btn') as HTMLElement).dispatchEvent(
+      new window.Event('click', { bubbles: true }),
+    );
+
+    submit(window, document);
+    await flush();
+    expect(document.querySelectorAll('.item-row').length).toBe(2);
+
+    (document.getElementById('new-document-btn') as HTMLElement).dispatchEvent(
+      new window.Event('click', { bubbles: true }),
+    );
+
+    expect(name.value).toBe('');
+    expect(document.querySelectorAll('.item-row').length).toBe(1);
+    expect((document.getElementById('invoice-type') as HTMLSelectElement).value).toBe(
+      'SERVICE INVOICE',
+    );
+    expect((document.getElementById('invoice-date') as HTMLInputElement).value).toBe(expectedDate);
+    expect((document.getElementById('tax-rate') as HTMLInputElement).value).toBe('0');
+    expect(document.getElementById('success-panel')!.classList.contains('hidden')).toBe(true);
+
+    // The blob is gone: Download again is inert after the reset.
+    const before = anchorClicks();
+    (document.getElementById('download-again-btn') as HTMLElement).dispatchEvent(
+      new window.Event('click', { bubbles: true }),
+    );
+    expect(anchorClicks()).toBe(before);
+  });
+});
+
 describe('item limit (chunk 1.1)', () => {
   it('adds at most 15 rows, then disables Add Item and shows a hint', async () => {
     const { window, document } = await boot();

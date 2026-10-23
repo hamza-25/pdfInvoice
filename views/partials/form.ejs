@@ -1,4 +1,24 @@
-<form id="invoice-form" class="space-y-10">
+<form id="invoice-form" class="space-y-10" novalidate>
+
+    <!-- Success panel (chunk R6): shown after a PDF is generated. The form keeps
+         its data, so the panel offers the three sensible next steps instead of
+         wiping anything. Server-side validation is the source of truth for
+         messages (hence novalidate above), mapped to fields by app.js. -->
+    <section id="success-panel" tabindex="-1" role="status" class="success-panel hidden">
+        <div class="success-head">
+            <span class="success-mark" aria-hidden="true">✓</span>
+            <div>
+                <h2 data-i18n="ui.successTitle" class="success-title">Document ready</h2>
+                <p data-i18n="ui.successBody" class="success-body">Your PDF was generated. Open it in a new tab, download it again, or start a new document.</p>
+                <p id="success-number" class="success-number hidden"></p>
+            </div>
+        </div>
+        <div class="success-actions">
+            <button id="open-preview-btn" type="button" data-i18n="ui.openPreview" class="btn-secondary rounded-md px-4 py-2 text-sm">Open preview</button>
+            <button id="download-again-btn" type="button" data-i18n="ui.downloadAgain" class="btn-secondary rounded-md px-4 py-2 text-sm">Download again</button>
+            <button id="new-document-btn" type="button" data-i18n="ui.newDocument" class="quiet-action">New document</button>
+        </div>
+    </section>
 
     <!-- Document type: segmented control mirroring the real <select> -->
     <section>
