@@ -177,6 +177,9 @@
             <span data-i18n="ui.total" class="action-bar-label">Total</span>
             <span id="action-total" class="action-bar-value money">$0.00</span>
         </div>
+        <!-- Below 1024px the sheet lives behind this button; on wide screens
+             the sticky pane shows it, so the button disappears there. -->
+        <button id="preview-btn" type="button" data-i18n="ui.preview" class="btn-secondary rounded-md px-5 py-3 text-base">Preview</button>
         <button id="submit-btn" type="submit" class="btn-primary rounded-md px-8 py-3 text-base">
             <span id="submit-btn-label" data-i18n="ui.submit">Submit for Processing</span>
         </button>

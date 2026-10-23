@@ -65,6 +65,9 @@
     });
     document.documentElement.lang = lang;
     document.title = tUi('ui.pageTitle') || document.title;
+    // Re-render the sheet so its labels follow the language too. `renderSheet`
+    // is a hoisted function declaration defined below, so it is always set.
+    renderSheet();
   };
 
   document.querySelectorAll('.lang-btn').forEach(function (btn) {
@@ -247,35 +250,11 @@
     }, 3000);
   };
 
-  var resetForm = function () {
-    // keep a valid option selected (setting value='' leaves the <select> invalid)
-    setDocType(docTypeSelect.options[0].value);
-    [
-      'company-name',
-      'company-address',
-      'company-city',
-      'company-phone',
-      'company-email',
-      'client-name',
-      'client-address',
-      'client-city',
-      'client-phone',
-      'client-email',
-      'payment-type',
-      'notes',
-    ].forEach(function (id) {
-      document.getElementById(id).value = '';
-    });
-  };
-
-  form.addEventListener('submit', function (e) {
-    e.preventDefault(); // stop native form submission (page navigation)
-    submitBtnLabel.textContent = tUi('ui.processing');
-    submitBtn.disabled = true;
-    submitBtn.setAttribute('aria-busy', 'true');
-
-    var invoiceData = {
-      documentType: document.getElementById('invoice-type').value,
+  /** Read the whole form into the API payload shape (single source of truth
+   *  for both the POST body and the live sheet preview). */
+  var collectData = function () {
+    var data = {
+      documentType: docTypeSelect.value,
       company: {
         name: document.getElementById('company-name').value,
         address: document.getElementById('company-address').value,
@@ -298,21 +277,339 @@
       taxRate: parseFloat(document.getElementById('tax-rate').value) || 0,
       subtotal: 0,
       total: 0,
-      currency: document.getElementById('currency').value || 'USD',
+      currency: currencySelect.value || 'USD',
       language: currentLang,
     };
 
     var subtotal = 0;
     document.querySelectorAll('.item-row').forEach(function (row) {
-      var description = row.querySelector('.description').value;
       var quantity = parseFloat(row.querySelector('.quantity').value) || 0;
       var price = parseFloat(row.querySelector('.price').value) || 0;
-      invoiceData.items.push({ description: description, quantity: quantity, price: price });
+      data.items.push({
+        description: row.querySelector('.description').value,
+        quantity: quantity,
+        price: price,
+      });
       subtotal += quantity * price;
     });
 
-    invoiceData.subtotal = subtotal;
-    invoiceData.total = subtotal * (1 + invoiceData.taxRate / 100);
+    data.subtotal = subtotal;
+    data.total = subtotal * (1 + data.taxRate / 100);
+    return data;
+  };
+
+  // --- Live sheet preview (chunk R5) -----------------------------------------
+  // Renders the same document the PDF will contain, from collectData(), into an
+  // A4-shaped element. Scaled to fit its pane (or the dialog on narrow screens).
+  var sheet = document.getElementById('sheet');
+  var sheetModal = document.getElementById('sheet-modal');
+  var sheetPane = document.getElementById('sheet-pane');
+  var previewModal = document.getElementById('preview-modal');
+  var previewBtn = document.getElementById('preview-btn');
+  var previewOpen = document.getElementById('preview-open');
+  var previewClose = document.getElementById('preview-close');
+  var SHEET_WIDTH = 794; // A4 at 96dpi
+
+  var escapeHtml = function (value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  };
+
+  // ISO date -> locale-aware, human date; follows the selected language.
+  var formatDate = function (isoDate) {
+    if (!isoDate) return '';
+    var parts = isoDate.split('-');
+    if (parts.length !== 3) return isoDate;
+    var date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    if (isNaN(date.getTime())) return isoDate;
+    try {
+      return new Intl.DateTimeFormat(currentLang === 'fr' ? 'fr-FR' : 'en-US', {
+        dateStyle: 'long',
+      }).format(date);
+    } catch (e) {
+      return isoDate;
+    }
+  };
+
+  var formatAmount = function (value, code) {
+    // Plain number for the items table, matching the PDF column (no symbol).
+    try {
+      return new Intl.NumberFormat(CURRENCY_LOCALES[code] || 'en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(value);
+    } catch (e) {
+      return value.toFixed(2);
+    }
+  };
+
+  // Title / id / date labels per document type, mirroring the PDF (chunk 4.1).
+  var DOC_TITLES = {
+    'SERVICE INVOICE': {
+      title: 'pdf.invoice.title',
+      id: 'pdf.invoice.idLabel',
+      date: 'pdf.date.invoice',
+    },
+    'PRODUCT INVOICE': {
+      title: 'pdf.invoice.title',
+      id: 'pdf.invoice.idLabel',
+      date: 'pdf.date.invoice',
+    },
+    QUOTE: { title: 'pdf.quote.title', id: 'pdf.quote.idLabel', date: 'pdf.date.quote' },
+    RECEIPT: { title: 'pdf.receipt.title', id: 'pdf.receipt.idLabel', date: 'pdf.date.receipt' },
+  };
+  var DEFAULT_DOC = DOC_TITLES['SERVICE INVOICE'];
+
+  var addressLines = function (party) {
+    return [party.address, party.city, party.phone, party.email]
+      .filter(function (line) {
+        return line && String(line).trim();
+      })
+      .map(function (line) {
+        return '<span>' + escapeHtml(line) + '</span>';
+      })
+      .join('');
+  };
+
+  var sheetItemRows = function (items, currency) {
+    var rows = '';
+    items.forEach(function (item, index) {
+      var lineTotal = item.quantity * item.price;
+      rows +=
+        '<tr>' +
+        '<td class="sheet-col-num">' +
+        escapeHtml(index + 1) +
+        '</td>' +
+        '<td class="sheet-col-desc">' +
+        (escapeHtml(item.description) || '&nbsp;') +
+        '</td>' +
+        '<td class="sheet-col-qty">' +
+        escapeHtml(item.quantity) +
+        '</td>' +
+        '<td class="sheet-col-price">' +
+        formatAmount(item.price, currency) +
+        '</td>' +
+        '<td class="sheet-col-amount">' +
+        formatAmount(lineTotal, currency) +
+        '</td>' +
+        '</tr>';
+    });
+    return rows;
+  };
+
+  var renderSheetMarkup = function () {
+    var data = collectData();
+    var meta = DOC_TITLES[data.documentType] || DEFAULT_DOC;
+    var taxAmount = data.subtotal * (data.taxRate / 100);
+
+    return (
+      '<div class="sheet-doc">' +
+      '<header class="sheet-head">' +
+      '<div class="sheet-from">' +
+      '<div class="sheet-party-name">' +
+      escapeHtml(data.company.name) +
+      '</div>' +
+      '<div class="sheet-party-lines">' +
+      addressLines(data.company) +
+      '</div>' +
+      '</div>' +
+      '<div class="sheet-meta">' +
+      '<div class="sheet-title">' +
+      escapeHtml(tUi(meta.title)) +
+      '</div>' +
+      '<div class="sheet-meta-line"><span>' +
+      escapeHtml(tUi(meta.id)) +
+      '</span><span>—</span></div>' +
+      '<div class="sheet-meta-line"><span>' +
+      escapeHtml(tUi(meta.date)) +
+      '</span><span>' +
+      escapeHtml(formatDate(data.issueDate)) +
+      '</span></div>' +
+      (data.dueDate
+        ? '<div class="sheet-meta-line"><span>' +
+          escapeHtml(tUi('ui.dueDateLabel')) +
+          '</span><span>' +
+          escapeHtml(formatDate(data.dueDate)) +
+          '</span></div>'
+        : '') +
+      '</div>' +
+      '</header>' +
+      '<section class="sheet-billto">' +
+      '<div class="sheet-label">' +
+      escapeHtml(tUi('pdf.billTo')) +
+      '</div>' +
+      '<div class="sheet-party-name">' +
+      escapeHtml(data.client.name) +
+      '</div>' +
+      '<div class="sheet-party-lines">' +
+      addressLines(data.client) +
+      '</div>' +
+      '</section>' +
+      '<table class="sheet-table">' +
+      '<thead><tr>' +
+      '<th class="sheet-col-num">#</th>' +
+      '<th class="sheet-col-desc">' +
+      escapeHtml(tUi('pdf.column.description')) +
+      '</th>' +
+      '<th class="sheet-col-qty">' +
+      escapeHtml(tUi('pdf.column.quantity')) +
+      '</th>' +
+      '<th class="sheet-col-price">' +
+      escapeHtml(tUi('pdf.column.amount')) +
+      '</th>' +
+      '<th class="sheet-col-amount">' +
+      escapeHtml(tUi('pdf.total')) +
+      '</th>' +
+      '</tr></thead>' +
+      '<tbody>' +
+      sheetItemRows(data.items, data.currency) +
+      '</tbody>' +
+      '</table>' +
+      '<section class="sheet-totals">' +
+      '<div class="sheet-total-row"><span>' +
+      escapeHtml(tUi('ui.subtotal')) +
+      '</span><span>' +
+      escapeHtml(formatCurrency(data.subtotal, data.currency)) +
+      '</span></div>' +
+      '<div class="sheet-total-row"><span>' +
+      escapeHtml(tUi('pdf.tax')) +
+      ' (' +
+      escapeHtml(data.taxRate) +
+      '%)</span><span>' +
+      escapeHtml(formatCurrency(taxAmount, data.currency)) +
+      '</span></div>' +
+      '<div class="sheet-total-row sheet-grand"><span>' +
+      escapeHtml(tUi('pdf.total')) +
+      '</span><span>' +
+      escapeHtml(formatCurrency(data.total, data.currency)) +
+      '</span></div>' +
+      '</section>' +
+      (data.paymentType
+        ? '<section class="sheet-note"><div class="sheet-label">' +
+          escapeHtml(tUi('ui.paymentHeading')) +
+          '</div><p>' +
+          escapeHtml(data.paymentType) +
+          '</p></section>'
+        : '') +
+      (data.notes
+        ? '<section class="sheet-note"><div class="sheet-label">' +
+          escapeHtml(tUi('ui.notesHeading')) +
+          '</div><p>' +
+          escapeHtml(data.notes) +
+          '</p></section>'
+        : '') +
+      '<footer class="sheet-foot">' +
+      escapeHtml(tUi('pdf.thanks')) +
+      '</footer>' +
+      '</div>'
+    );
+  };
+
+  var renderSheet = function () {
+    if (!sheet && !sheetModal) return;
+    var markup = renderSheetMarkup();
+    if (sheet) sheet.innerHTML = markup;
+    if (sheetModal) sheetModal.innerHTML = markup;
+    updateSheetScales();
+  };
+
+  // Scale a fixed-width A4 down to whatever room its viewport has. Guarded
+  // because jsdom (tests) has no layout and no ResizeObserver — there we only
+  // check content, never pixels.
+  var scaleSheet = function (el, available) {
+    if (!el || !available) return;
+    var scale = Math.min(1, available / SHEET_WIDTH);
+    el.style.transform = 'scale(' + scale + ')';
+    // Collapse the box (overflow is visible) so the scaled sheet still
+    // influences the stage's scroll height and never clips.
+    el.style.height = 'auto';
+    el.style.width = available + 'px';
+  };
+
+  var scaleInto = function (el, viewport) {
+    if (!viewport) return;
+    var available = viewport.clientWidth - 32; // minus the viewport's padding
+    if (available > 0) scaleSheet(el, available);
+  };
+
+  var updateSheetScales = function () {
+    if (sheet) scaleInto(sheet, document.querySelector('.sheet-pane .sheet-viewport'));
+    if (sheetModal)
+      scaleInto(sheetModal, document.querySelector('.preview-dialog .preview-viewport'));
+  };
+
+  // Keep the sheet fitting its viewport as the window resizes. Prefer a
+  // ResizeObserver on the panes; fall back to window.resize where it is missing
+  // (older browsers, and jsdom in tests — where this whole branch is inert).
+  if (typeof window.ResizeObserver === 'function') {
+    [sheetPane, previewModal].forEach(function (node) {
+      if (node) new window.ResizeObserver(updateSheetScales).observe(node);
+    });
+  } else {
+    window.addEventListener('resize', updateSheetScales);
+  }
+
+  // Preview dialog: opens from the sticky pane (desktop) or the action bar
+  // (phones/tablets); closes on the button, the backdrop, or Esc. Focus moves
+  // in on open and returns to the trigger on close.
+  var lastPreviewTrigger = null;
+
+  var openPreview = function (trigger) {
+    if (!previewModal) return;
+    lastPreviewTrigger = trigger || null;
+    previewModal.classList.remove('hidden');
+    previewModal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+    updateSheetScales();
+    if (previewClose) previewClose.focus();
+  };
+
+  var closePreview = function () {
+    if (!previewModal || previewModal.classList.contains('hidden')) return;
+    previewModal.classList.add('hidden');
+    previewModal.classList.remove('flex');
+    document.body.style.overflow = '';
+    if (lastPreviewTrigger && typeof lastPreviewTrigger.focus === 'function') {
+      lastPreviewTrigger.focus();
+    }
+    lastPreviewTrigger = null;
+  };
+
+  if (previewBtn) {
+    previewBtn.addEventListener('click', function () {
+      openPreview(previewBtn);
+    });
+  }
+  if (previewOpen) {
+    previewOpen.addEventListener('click', function () {
+      openPreview(previewOpen);
+    });
+  }
+  if (previewClose) previewClose.addEventListener('click', closePreview);
+  if (previewModal) {
+    previewModal.addEventListener('click', function (e) {
+      // Backdrop click: the dialog itself must not close on inner clicks.
+      if (e.target === previewModal) closePreview();
+    });
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closePreview();
+  });
+
+  // Re-render the sheet whenever anything it shows changes.
+  form.addEventListener('input', renderSheet);
+  form.addEventListener('change', renderSheet);
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault(); // stop native form submission (page navigation)
+    submitBtnLabel.textContent = tUi('ui.processing');
+    submitBtn.disabled = true;
+    submitBtn.setAttribute('aria-busy', 'true');
+
+    var invoiceData = collectData();
 
     fetch('/pdf/invoice-generate', {
       method: 'POST',
@@ -366,7 +663,8 @@
           window.URL.revokeObjectURL(url);
           showToast(document.getElementById('notification-toast'), tUi('ui.toastDownloaded'));
         }
-        resetForm();
+        // Form data is preserved (locked decision #3): the sheet still mirrors
+        // it and the success panel arrives in R6.
       })
       .catch(function (err) {
         showToast(
@@ -383,8 +681,10 @@
 
   // --- Initial setup ---
   addNewItem();
-  applyLang(currentLang);
   setDocType(docTypeSelect.value || docTypeSelect.options[0].value);
   document.getElementById('invoice-date').valueAsDate = new Date();
   updateTotals();
+  // applyLang() renders the sheet, but the seeded date is set after it — render
+  // once more so the sheet starts in sync with the form.
+  renderSheet();
 })();

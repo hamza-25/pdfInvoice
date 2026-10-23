@@ -236,7 +236,7 @@ describe('submit behaviour (chunks 0.2 / 0.3 / 0.7)', () => {
     await flush();
   });
 
-  it('shows the success toast only after the response and keeps the select valid', async () => {
+  it('preserves the form data after a successful generate (chunk R5)', async () => {
     const { window, document } = await boot();
     const type = document.getElementById('invoice-type') as HTMLSelectElement;
     type.value = 'QUOTE';
@@ -250,9 +250,8 @@ describe('submit behaviour (chunks 0.2 / 0.3 / 0.7)', () => {
     expect(toast.className).toContain('opacity-100');
     expect(toast.textContent).toContain('new tab'); // preview path (chunk 4.4)
 
-    // B11 fix: the <select> keeps a valid option (was set to '', breaking the next submit)
-    expect(type.value).not.toBe('');
-    expect(type.selectedIndex).toBe(0);
+    // Locked decision #3: nothing is wiped — the user can tweak and regenerate.
+    expect(type.value).toBe('QUOTE');
 
     const btn = document.getElementById('submit-btn') as HTMLButtonElement;
     expect(btn.disabled).toBe(false);
@@ -343,7 +342,7 @@ describe('document type segmented control (chunk R3)', () => {
     expect(checked.value).toBe('SERVICE INVOICE');
   });
 
-  it('resets the radios along with the select after a successful submit', async () => {
+  it('keeps the radios and select on the chosen type after a successful submit (chunk R5)', async () => {
     const { window, document } = await boot();
     const quote = document.querySelector(
       'input[name="doc-type"][value="QUOTE"]',
@@ -354,11 +353,10 @@ describe('document type segmented control (chunk R3)', () => {
     submit(window, document);
     await flush();
 
-    expect((document.getElementById('invoice-type') as HTMLSelectElement).value).toBe(
-      'SERVICE INVOICE',
-    );
+    // Data is preserved, so the segmented control still reflects the choice.
+    expect((document.getElementById('invoice-type') as HTMLSelectElement).value).toBe('QUOTE');
     const checked = document.querySelector('input[name="doc-type"]:checked') as HTMLInputElement;
-    expect(checked.value).toBe('SERVICE INVOICE');
+    expect(checked.value).toBe('QUOTE');
   });
 
   it('exposes each segment as a labelled radio', async () => {
@@ -645,6 +643,187 @@ describe('theme toggle (dark mode)', () => {
 
     const { document: docB } = await boot(undefined, { theme: 'dark' });
     expect(docB.documentElement.classList.contains('dark')).toBe(true);
+  });
+});
+
+describe('live A4 sheet (chunk R5)', () => {
+  /** Set the first item row's description/qty/price and fire input events. */
+  const fillItem = (
+    window: JSDOM['window'],
+    document: Document,
+    { description, quantity, price }: { description?: string; quantity?: string; price?: string },
+  ) => {
+    const row = document.querySelector('.item-row') as HTMLElement;
+    if (description !== undefined) {
+      const desc = row.querySelector('.description') as HTMLInputElement;
+      desc.value = description;
+      desc.dispatchEvent(new window.Event('input', { bubbles: true }));
+    }
+    if (quantity !== undefined) {
+      (row.querySelector('.quantity') as HTMLInputElement).value = quantity;
+    }
+    if (price !== undefined) {
+      (row.querySelector('.price') as HTMLInputElement).value = price;
+    }
+    if (quantity !== undefined || price !== undefined) {
+      (row.querySelector('.price') as HTMLInputElement).dispatchEvent(
+        new window.Event('input', { bubbles: true }),
+      );
+    }
+  };
+
+  const sheetText = (document: Document) => document.getElementById('sheet')!.textContent || '';
+
+  it('renders the company, client and document title into the sheet', async () => {
+    const { window, document } = await boot();
+    const company = document.getElementById('company-name') as HTMLInputElement;
+    company.value = 'Acme Corp';
+    company.dispatchEvent(new window.Event('input', { bubbles: true }));
+    const client = document.getElementById('client-name') as HTMLInputElement;
+    client.value = 'Globex';
+    client.dispatchEvent(new window.Event('input', { bubbles: true }));
+
+    expect(sheetText(document)).toContain('Acme Corp');
+    expect(sheetText(document)).toContain('Globex');
+    expect(sheetText(document)).toContain(en['pdf.invoice.title']);
+  });
+
+  it('tracks item, tax and total changes live', async () => {
+    const { window, document } = await boot();
+    fillItem(window, document, { description: 'Consulting', quantity: '2', price: '10' });
+
+    const tax = document.getElementById('tax-rate') as HTMLInputElement;
+    tax.value = '10';
+    tax.dispatchEvent(new window.Event('input', { bubbles: true }));
+
+    // Subtotal 20, tax 2, total 22 — formatted like the form's totals.
+    expect(sheetText(document)).toContain('Consulting');
+    expect(sheetText(document)).toContain(
+      new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(20),
+    );
+    expect(sheetText(document)).toContain(
+      new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(22),
+    );
+  });
+
+  it('re-formats the sheet when the currency changes (USD -> JPY)', async () => {
+    const { window, document } = await boot();
+    fillItem(window, document, { quantity: '2', price: '10' });
+
+    const currency = document.getElementById('currency') as HTMLSelectElement;
+    currency.value = 'JPY';
+    currency.dispatchEvent(new window.Event('change', { bubbles: true }));
+
+    const yen = new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(20);
+    expect(sheetText(document)).toContain(yen);
+    expect(sheetText(document)).not.toContain('$20.00');
+  });
+
+  it('follows the document type (title and date label)', async () => {
+    const { window, document } = await boot();
+    const quote = document.querySelector(
+      'input[name="doc-type"][value="QUOTE"]',
+    ) as HTMLInputElement;
+    quote.checked = true;
+    quote.dispatchEvent(new window.Event('change', { bubbles: true }));
+
+    expect(sheetText(document)).toContain(en['pdf.quote.title']);
+    expect(sheetText(document)).toContain(en['pdf.quote.idLabel']);
+    expect(sheetText(document)).not.toContain(en['pdf.invoice.title']);
+  });
+
+  it('shows payment details and notes only when they are filled in', async () => {
+    const { window, document } = await boot();
+    expect(sheetText(document)).not.toContain(en['ui.notesHeading']);
+
+    const notes = document.getElementById('notes') as HTMLTextAreaElement;
+    notes.value = 'Pay within 30 days';
+    notes.dispatchEvent(new window.Event('input', { bubbles: true }));
+
+    expect(sheetText(document)).toContain(en['ui.notesHeading']);
+    expect(sheetText(document)).toContain('Pay within 30 days');
+  });
+
+  it('re-translates the sheet when the language changes', async () => {
+    const { window, document } = await boot();
+    expect(sheetText(document)).toContain(en['pdf.billTo']);
+
+    (document.querySelector('.lang-btn[data-lang="fr"]') as HTMLElement).dispatchEvent(
+      new window.Event('click', { bubbles: true }),
+    );
+    expect(sheetText(document)).toContain(fr['pdf.billTo']);
+    expect(sheetText(document)).toContain(fr['pdf.invoice.title']);
+  });
+
+  it('renders the same document into the preview dialog', async () => {
+    const { window, document } = await boot();
+    fillItem(window, document, { description: 'Design work', quantity: '1', price: '50' });
+
+    const modal = document.getElementById('sheet-modal')!;
+    expect(modal.textContent).toContain('Design work');
+    expect(modal.textContent).toContain(en['pdf.invoice.title']);
+  });
+
+  it('opens and closes the preview dialog with Esc, moving focus', async () => {
+    const { window, document } = await boot();
+    const modal = document.getElementById('preview-modal')!;
+    const previewBtn = document.getElementById('preview-btn')!;
+
+    previewBtn.dispatchEvent(new window.Event('click', { bubbles: true }));
+    expect(modal.classList.contains('hidden')).toBe(false);
+    expect(modal.getAttribute('role')).toBe('dialog');
+    expect(modal.getAttribute('aria-modal')).toBe('true');
+    expect(document.activeElement).toBe(document.getElementById('preview-close'));
+
+    document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(modal.classList.contains('hidden')).toBe(true);
+    // Focus returns to the trigger.
+    expect(document.activeElement).toBe(previewBtn);
+  });
+
+  it('opens the preview from the desktop "Open full preview" control too', async () => {
+    const { window, document } = await boot();
+    const modal = document.getElementById('preview-modal')!;
+    const open = document.getElementById('preview-open')!;
+
+    open.dispatchEvent(new window.Event('click', { bubbles: true }));
+    expect(modal.classList.contains('hidden')).toBe(false);
+
+    (document.getElementById('preview-close') as HTMLElement).dispatchEvent(
+      new window.Event('click', { bubbles: true }),
+    );
+    expect(modal.classList.contains('hidden')).toBe(true);
+  });
+
+  it('closes the preview dialog when the backdrop is clicked', async () => {
+    const { window, document } = await boot();
+    const modal = document.getElementById('preview-modal')!;
+
+    (document.getElementById('preview-btn') as HTMLElement).dispatchEvent(
+      new window.Event('click', { bubbles: true }),
+    );
+    expect(modal.classList.contains('hidden')).toBe(false);
+
+    modal.dispatchEvent(new window.Event('click', { bubbles: true }));
+    expect(modal.classList.contains('hidden')).toBe(true);
+  });
+
+  it('keeps the sheet paper-white in both themes (CSS)', async () => {
+    const css = fs.readFileSync(path.resolve(process.cwd(), 'src/styles/app.css'), 'utf8');
+    // A literal white background for .sheet, regardless of --color-sheet.
+    expect(css).toMatch(/\.sheet\s*\{[^}]*background-color:\s*#fff/i);
+    // A4 page-break hairlines every 1123px.
+    expect(css).toContain('1123px');
+    // The pane is sticky on wide screens and the sheet box carries the shadow.
+    expect(css).toMatch(/\.sheet-pane\s*\{[^}]*position:\s*sticky/);
+    expect(css).toMatch(/\.layout-split\s*\{[^}]*grid-template-columns/);
+  });
+
+  it('guards ResizeObserver so jsdom never crashes', async () => {
+    // jsdom has no ResizeObserver; booting must still succeed and render.
+    expect(typeof (globalThis as { ResizeObserver?: unknown }).ResizeObserver).toBe('undefined');
+    const { document } = await boot();
+    expect(document.getElementById('sheet')!.innerHTML).not.toBe('');
   });
 });
 
