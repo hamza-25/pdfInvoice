@@ -551,26 +551,54 @@
   // Scale a fixed-width A4 down to whatever room its viewport has. Guarded
   // because jsdom (tests) has no layout and no ResizeObserver — there we only
   // check content, never pixels.
-  var scaleSheet = function (el, available) {
-    if (!el || !available) return;
-    var scale = Math.min(1, available / SHEET_WIDTH);
+  var SHEET_HEIGHT = 1123;
+
+  var scaleSheet = function (el, viewport) {
+    if (!el || !viewport) return;
+    var style = window.getComputedStyle ? window.getComputedStyle(viewport) : null;
+    var padX =
+      (parseFloat(style && style.paddingLeft) || 0) +
+      (parseFloat(style && style.paddingRight) || 0);
+    var padY =
+      (parseFloat(style && style.paddingTop) || 0) +
+      (parseFloat(style && style.paddingBottom) || 0);
+    var availW = viewport.clientWidth - padX;
+    var availH = viewport.clientHeight - padY;
+    if (availW <= 0 || availH <= 0) return;
+    var sheetH = el.offsetHeight || SHEET_HEIGHT;
+    if (sheetH <= 0) sheetH = SHEET_HEIGHT;
+    var scale = Math.min(1, availW / SHEET_WIDTH, availH / sheetH);
+    if (!isFinite(scale) || scale <= 0) return;
+    scale = Math.max(scale, 0.01);
+    el.style.transformOrigin = 'top left';
     el.style.transform = 'scale(' + scale + ')';
-    // Collapse the box (overflow is visible) so the scaled sheet still
-    // influences the stage's scroll height and never clips.
-    el.style.height = 'auto';
-    el.style.width = available + 'px';
+    var stage = el.parentElement;
+    if (stage && stage.classList && stage.classList.contains('sheet-stage')) {
+      stage.style.width = (SHEET_WIDTH * scale).toFixed(3) + 'px';
+      stage.style.height = (sheetH * scale).toFixed(3) + 'px';
+    }
   };
 
   var scaleInto = function (el, viewport) {
     if (!viewport) return;
-    var available = viewport.clientWidth - 32; // minus the viewport's padding
-    if (available > 0) scaleSheet(el, available);
+    var stage = el && el.parentElement;
+    if (stage) {
+      stage.style.width = SHEET_WIDTH + 'px';
+      stage.style.height = SHEET_HEIGHT + 'px';
+    }
+    scaleSheet(el, viewport);
+  };
+
+  var sheetPaneViewport = function () {
+    return document.querySelector('.sheet-pane .sheet-viewport');
+  };
+  var previewViewport = function () {
+    return document.querySelector('.preview-dialog .preview-viewport');
   };
 
   var updateSheetScales = function () {
-    if (sheet) scaleInto(sheet, document.querySelector('.sheet-pane .sheet-viewport'));
-    if (sheetModal)
-      scaleInto(sheetModal, document.querySelector('.preview-dialog .preview-viewport'));
+    if (sheet) scaleInto(sheet, sheetPaneViewport());
+    if (sheetModal) scaleInto(sheetModal, previewViewport());
   };
 
   // Keep the sheet fitting its viewport as the window resizes. Prefer a

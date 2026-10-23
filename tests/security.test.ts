@@ -163,3 +163,15 @@ describe('rate limiting (chunk 3.1)', () => {
     }
   });
 });
+
+describe('preview fit (R9 fix)', () => {
+  it('keeps preview viewports scroll-free and the dialog sized to fill', async () => {
+    const res = await request(app).get('/');
+    expect(res.text).toContain('class="sheet-viewport"');
+    expect(res.text).toContain('class="preview-viewport"');
+    expect(res.text).toContain('class="preview-dialog"');
+    // The viewport wrappers must not rely on overflow scroll to show a clipped sheet.
+    expect(res.text).not.toMatch(/sheet-viewport[^"]*overflow:\s*auto/i);
+    expect(res.text).not.toMatch(/preview-viewport[^"]*overflow:\s*auto/i);
+  });
+});
