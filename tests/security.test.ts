@@ -27,8 +27,12 @@ describe('security headers (chunk 3.1)', () => {
     // Chunk R1: the stylesheet is compiled and served locally — no CDN.
     expect(res.headers['content-security-policy']).not.toContain('cdn.tailwindcss.com');
     expect(res.headers['content-security-policy']).toContain("default-src 'self'");
-    // Chunk R2: no inline scripts/styles left, so the CSP allows none.
+    // Chunk R2/R8: no inline scripts/styles left, so the CSP allows none.
+    // Self-hosting fonts remains future work (Google Fonts still allowed for style-src).
     expect(res.headers['content-security-policy']).toContain("script-src 'self'");
+    expect(res.headers['content-security-policy']).toContain(
+      "style-src 'self' https://fonts.googleapis.com",
+    );
     expect(res.headers['content-security-policy']).not.toContain("'unsafe-inline'");
   });
 
