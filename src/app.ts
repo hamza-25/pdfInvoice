@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
 import pinoHttp from 'pino-http';
 import { randomUUID } from 'crypto';
+import path from 'path';
 import { logger } from './logger';
 import invoiceRoutes from './routes/invoiceRoute';
 import { errorHandler } from './middleware/errorHandler';
@@ -25,15 +26,16 @@ app.use(
   }),
 );
 
-// Security headers. The CSP is tuned for the served page, which loads the
-// Tailwind CDN, Google Fonts and an inline <script> block.
+// Security headers. The CSP is tuned for the served page: stylesheet and
+// scripts are all same-origin files (chunk R2 — no inline script/style left),
+// only the Google Fonts origins are allowed remotely.
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.tailwindcss.com'],
-        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", 'https://fonts.googleapis.com'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
         imgSrc: ["'self'", 'data:'],
         objectSrc: ["'none'"],
@@ -68,6 +70,10 @@ const sameOriginOnly: RequestHandler = (req, res, next) => {
 app.use(sameOriginOnly);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: '200kb' }));
+
+// Static assets (compiled stylesheet, behaviour scripts). Served before the
+// routes so /css/app.css never falls through to the view renderer.
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Rate limit the PDF endpoint only: 10 requests/minute/IP.
 // Disabled under test so the suite never flakes.

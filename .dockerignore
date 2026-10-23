@@ -1,5 +1,6 @@
 node_modules
 dist
+public/css/app.css
 coverage
 .git
 .github

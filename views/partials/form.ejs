@@ -1,0 +1,211 @@
+<form id="invoice-form" class="space-y-10" novalidate>
+
+    <!-- Success panel (chunk R6): shown after a PDF is generated. The form keeps
+         its data, so the panel offers the three sensible next steps instead of
+         wiping anything. Server-side validation is the source of truth for
+         messages (hence novalidate above), mapped to fields by app.js. -->
+    <section id="success-panel" tabindex="-1" role="status" class="success-panel hidden">
+        <div class="success-head">
+            <span class="success-mark" aria-hidden="true">✓</span>
+            <div>
+                <h2 data-i18n="ui.successTitle" class="success-title">Document ready</h2>
+                <p data-i18n="ui.successBody" class="success-body">Your PDF was generated. Open it in a new tab, download it again, or start a new document.</p>
+                <p id="success-number" class="success-number hidden"></p>
+            </div>
+        </div>
+        <div class="success-actions">
+            <button id="open-preview-btn" type="button" data-i18n="ui.openPreview" class="btn-secondary rounded-md px-4 py-2 text-sm">Open preview</button>
+            <button id="download-again-btn" type="button" data-i18n="ui.downloadAgain" class="btn-secondary rounded-md px-4 py-2 text-sm">Download again</button>
+            <button id="new-document-btn" type="button" data-i18n="ui.newDocument" class="quiet-action">New document</button>
+        </div>
+    </section>
+
+    <!-- Document type: segmented control mirroring the real <select> -->
+    <section>
+        <h2 data-i18n="ui.docTypeHeading" class="section-title">Document Type</h2>
+        <div class="mt-3">
+            <!-- The <select> stays the form's source of truth (submitted value,
+                 reset behaviour). The radios are the visible control and keep it
+                 in sync; it is hidden from sight but not from assistive tech. -->
+            <label for="invoice-type" data-i18n="ui.docTypeLabel" class="sr-only">Document type</label>
+            <select id="invoice-type" class="sr-only" tabindex="-1" aria-hidden="true">
+                <option value="SERVICE INVOICE" data-i18n="ui.docTypeService">Service Invoice</option>
+                <option value="PRODUCT INVOICE" data-i18n="ui.docTypeProduct">Product Invoice</option>
+                <option value="QUOTE" data-i18n="ui.docTypeQuote">Quote</option>
+                <option value="RECEIPT" data-i18n="ui.docTypeReceipt">Receipt</option>
+            </select>
+
+            <div class="seg grid-cols-2 sm:grid-cols-4" role="radiogroup" aria-label="Document type">
+                <label class="seg-option"><input type="radio" name="doc-type" value="SERVICE INVOICE" data-i18n-aria="ui.docTypeService" aria-label="Service Invoice" checked><span data-i18n="ui.docTypeService">Service Invoice</span></label>
+                <label class="seg-option"><input type="radio" name="doc-type" value="PRODUCT INVOICE" data-i18n-aria="ui.docTypeProduct" aria-label="Product Invoice"><span data-i18n="ui.docTypeProduct">Product Invoice</span></label>
+                <label class="seg-option"><input type="radio" name="doc-type" value="QUOTE" data-i18n-aria="ui.docTypeQuote" aria-label="Quote"><span data-i18n="ui.docTypeQuote">Quote</span></label>
+                <label class="seg-option"><input type="radio" name="doc-type" value="RECEIPT" data-i18n-aria="ui.docTypeReceipt" aria-label="Receipt"><span data-i18n="ui.docTypeReceipt">Receipt</span></label>
+            </div>
+        </div>
+    </section>
+
+    <hr class="rule">
+
+    <!-- Parties -->
+    <section class="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-2">
+        <div class="space-y-4">
+            <h2 data-i18n="ui.from" class="section-title">From</h2>
+            <div>
+                <label for="company-name" data-i18n="ui.companyNameLabel" class="field-label">Company name</label>
+                <input id="company-name" type="text" autocomplete="organization" data-i18n-ph="ui.companyNamePh" placeholder="Your Company Name" required class="invoice-input w-full rounded-md p-2.5">
+            </div>
+            <div>
+                <label for="company-address" data-i18n="ui.companyAddressLabel" class="field-label">Company address</label>
+                <textarea id="company-address" autocomplete="street-address" data-i18n-ph="ui.companyAddressPh" placeholder="Your Address..." rows="2" class="invoice-input w-full rounded-md p-2.5"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="company-city" data-i18n="ui.companyCityLabel" class="field-label">Company city</label>
+                    <input id="company-city" type="text" autocomplete="address-level2" data-i18n-ph="ui.companyCityPh" placeholder="Your company city" class="invoice-input w-full rounded-md p-2.5">
+                </div>
+                <div>
+                    <label for="company-phone" data-i18n="ui.companyPhoneLabel" class="field-label">Company phone</label>
+                    <input id="company-phone" type="tel" autocomplete="tel" data-i18n-ph="ui.companyPhonePh" placeholder="Your Company phone" class="invoice-input w-full rounded-md p-2.5">
+                </div>
+            </div>
+            <div>
+                <label for="company-email" data-i18n="ui.companyEmailLabel" class="field-label">Company email</label>
+                <input id="company-email" type="text" autocomplete="email" data-i18n-ph="ui.companyEmailPh" placeholder="Your company email" class="invoice-input w-full rounded-md p-2.5">
+            </div>
+        </div>
+
+        <div class="space-y-4">
+            <h2 data-i18n="ui.billTo" class="section-title">Bill To</h2>
+            <div>
+                <label for="client-name" data-i18n="ui.clientNameLabel" class="field-label">Client name</label>
+                <input id="client-name" type="text" autocomplete="organization" data-i18n-ph="ui.clientNamePh" placeholder="Client's Company Name" required class="invoice-input w-full rounded-md p-2.5">
+            </div>
+            <div>
+                <label for="client-address" data-i18n="ui.clientAddressLabel" class="field-label">Client address</label>
+                <textarea id="client-address" autocomplete="street-address" data-i18n-ph="ui.clientAddressPh" placeholder="Client's Address..." rows="2" class="invoice-input w-full rounded-md p-2.5"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="client-city" data-i18n="ui.clientCityLabel" class="field-label">Client city</label>
+                    <input id="client-city" type="text" autocomplete="address-level2" data-i18n-ph="ui.clientCityPh" placeholder="Your client city" class="invoice-input w-full rounded-md p-2.5">
+                </div>
+                <div>
+                    <label for="client-phone" data-i18n="ui.clientPhoneLabel" class="field-label">Client phone</label>
+                    <input id="client-phone" type="tel" autocomplete="tel" data-i18n-ph="ui.clientPhonePh" placeholder="Your client phone" class="invoice-input w-full rounded-md p-2.5">
+                </div>
+            </div>
+            <div>
+                <label for="client-email" data-i18n="ui.clientEmailLabel" class="field-label">Client email</label>
+                <input id="client-email" type="text" autocomplete="email" data-i18n-ph="ui.clientEmailPh" placeholder="Your client email" class="invoice-input w-full rounded-md p-2.5">
+            </div>
+        </div>
+    </section>
+
+    <hr class="rule">
+
+    <!-- Dates & currency -->
+    <section class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+        <div>
+            <label for="invoice-date" data-i18n="ui.dateLabel" class="field-label">Date</label>
+            <input id="invoice-date" type="date" required class="invoice-input w-full rounded-md p-2.5">
+        </div>
+        <div>
+            <label for="due-date" data-i18n="ui.dueDateLabel" class="field-label">Due Date</label>
+            <input id="due-date" type="date" class="invoice-input w-full rounded-md p-2.5">
+        </div>
+        <div>
+            <label for="currency" data-i18n="ui.currencyLabel" class="field-label">Currency</label>
+            <select id="currency" required class="invoice-input w-full rounded-md p-2.5">
+                <option value="USD">USD</option>
+                <option value="MAD">MAD</option>
+                <option value="EUR">EUR</option>
+                <option value="JPY">JPY</option>
+                <option value="GBP">GBP</option>
+            </select>
+        </div>
+    </section>
+
+    <hr class="rule">
+
+    <!-- Items -->
+    <section>
+        <div class="flex items-baseline justify-between gap-4">
+            <div class="flex items-baseline gap-3">
+                <h2 data-i18n="ui.itemsHeading" class="section-title">Items</h2>
+                <!-- Live counter (chunk R7); app.js fills it from ui.itemsOf. -->
+                <span id="items-count" class="text-sm text-ink-soft">1 of 15 items</span>
+            </div>
+            <button type="button" id="add-item-btn" class="inline-flex items-center gap-1 text-sm font-semibold text-accent-ink hover:underline disabled:cursor-not-allowed disabled:opacity-50 disabled:no-underline">
+                <svg class="h-4 w-4" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                <span data-i18n="ui.addItem">Add Item</span>
+            </button>
+        </div>
+
+        <div class="mt-3">
+            <table class="item-table">
+                <thead>
+                    <tr class="border-b border-rule text-left">
+                        <th data-i18n="ui.tableDescription" class="w-1/2 py-2 text-xs font-semibold uppercase tracking-wide text-ink-soft">Description</th>
+                        <th data-i18n="ui.tableQty" class="w-1/6 py-2 text-center text-xs font-semibold uppercase tracking-wide text-ink-soft">Qty</th>
+                        <th data-i18n="ui.tablePrice" class="w-1/4 py-2 text-center text-xs font-semibold uppercase tracking-wide text-ink-soft">Price</th>
+                        <th class="w-10 py-2"><span data-i18n="ui.actions" class="sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody id="invoice-items"></tbody>
+            </table>
+        </div>
+
+        <p id="items-limit-hint" data-i18n="ui.itemsLimitHint" class="mt-2 hidden text-sm text-accent-ink">Maximum of 15 items reached.</p>
+    </section>
+
+    <hr class="rule">
+
+    <!-- Totals: a small ledger -->
+    <section class="flex justify-end">
+        <div class="w-full max-w-xs space-y-3">
+            <div class="flex items-baseline justify-between text-ink-soft">
+                <span data-i18n="ui.subtotal" class="field-label mb-0">Subtotal</span>
+                <span id="subtotal" class="money">$0.00</span>
+            </div>
+            <div class="flex items-center justify-between text-ink-soft">
+                <label for="tax-rate" data-i18n="ui.taxRate" class="field-label mb-0">Tax (%)</label>
+                <input id="tax-rate" type="number" value="0" min="0" max="100" inputmode="decimal" required class="invoice-input money w-24 rounded-md p-2.5 text-right">
+            </div>
+            <hr class="rule">
+            <div class="flex items-baseline justify-between">
+                <span data-i18n="ui.total" class="font-semibold">Total</span>
+                <span id="total-amount" class="money display text-xl text-accent-ink">$0.00</span>
+            </div>
+        </div>
+    </section>
+
+    <hr class="rule">
+
+    <!-- Payment & notes -->
+    <section class="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-2">
+        <div>
+            <label for="payment-type" data-i18n="ui.paymentHeading" class="field-label">Payment Type</label>
+            <textarea id="payment-type" data-i18n-ph="ui.paymentPh" placeholder="e.g., Bank Transfer, Credit Card, Net 30" rows="4" class="invoice-input w-full rounded-md p-2.5"></textarea>
+        </div>
+        <div>
+            <label for="notes" data-i18n="ui.notesHeading" class="field-label">Notes</label>
+            <textarea id="notes" data-i18n-ph="ui.notesPh" placeholder="Thank you for your business!" rows="4" class="invoice-input w-full rounded-md p-2.5"></textarea>
+        </div>
+    </section>
+
+    <!-- Sticky action bar: running total + the single submit button.
+         Wide screens: static, just the button at the end of the form.
+         Phones/tablets: pinned to the bottom in the thumb zone. -->
+    <section class="action-bar">
+        <div class="action-bar-total">
+            <span data-i18n="ui.total" class="action-bar-label">Total</span>
+            <span id="action-total" class="action-bar-value money">$0.00</span>
+        </div>
+        <!-- Below 1024px the sheet lives behind this button; on wide screens
+             the sticky pane shows it, so the button disappears there. -->
+        <button id="preview-btn" type="button" data-i18n="ui.preview" class="btn-secondary rounded-md px-5 py-3 text-base">Preview</button>
+        <button id="submit-btn" type="submit" class="btn-primary rounded-md px-8 py-3 text-base">
+            <span id="submit-btn-label" data-i18n="ui.submit">Generate PDF</span>
+        </button>
+    </section>
+</form>

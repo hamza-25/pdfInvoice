@@ -18,16 +18,23 @@ cp .env.example .env   # optional; defaults are used if absent
 
 ## Scripts
 
-| Script                 | Description                                    |
-| ---------------------- | ---------------------------------------------- |
-| `npm run dev`          | Start with nodemon + ts-node (auto-reload)     |
-| `npm run build`        | Compile TypeScript `src/` → `dist/`            |
-| `npm start`            | Run the compiled server (`node dist/index.js`) |
-| `npm test`             | Run the test suite (Vitest)                    |
-| `npm run lint`         | ESLint                                         |
-| `npm run format`       | Prettier (write)                               |
-| `npm run format:check` | Prettier (check; used in CI)                   |
-| `npm run typecheck`    | `tsc --noEmit`                                 |
+| Script                 | Description                                                       |
+| ---------------------- | ----------------------------------------------------------------- |
+| `npm run dev`          | Start with nodemon + ts-node (auto-reload)                        |
+| `npm run build`        | Build the stylesheet **and** compile TypeScript `src/` → `dist/`  |
+| `npm run build:css`    | Compile `src/styles/app.css` → `public/css/app.css` (Tailwind v4) |
+| `npm start`            | Run the compiled server (`node dist/index.js`)                    |
+| `npm test`             | Run the test suite (Vitest)                                       |
+| `npm run lint`         | ESLint                                                            |
+| `npm run format`       | Prettier (write)                                                  |
+| `npm run format:check` | Prettier (check; used in CI)                                      |
+| `npm run typecheck`    | `tsc --noEmit`                                                    |
+
+> The page stylesheet is **compiled**, not loaded from a CDN: run `npm run build` (or `npm run build:css`)
+> before `npm start`, otherwise the CSS 404s. `public/css/` is generated and not tracked in git.
+
+> **Mobile**: below 768px the item editor becomes stacked, labeled blocks (no horizontal scroll),
+> and the submit button lives in a sticky bottom action bar carrying the running total.
 
 ## Environment variables
 
@@ -104,7 +111,7 @@ Multi-stage build; the runtime image contains production dependencies only and r
 
 ## Security & operations
 
-- **Helmet** security headers with a CSP tuned for the page (Tailwind CDN + Google Fonts)
+- **Helmet** security headers with a CSP tuned for the page (local stylesheet + Google Fonts — no CDN)
 - **Same-origin only**: requests with a foreign `Origin` header get `403`
 - **Rate limiting** on `/pdf` (10/min/IP) and a **200 KB JSON body limit**
 - **PDF-safe input handling**: control characters stripped, length caps enforced; text is _not_ HTML-escaped (`O'Brien` stays `O'Brien`)
@@ -116,8 +123,9 @@ Multi-stage build; the runtime image contains production dependencies only and r
 ```
 src/
   index.ts                           app entry (listen, graceful shutdown)
-  app.ts                             Express setup (security, routes, error handler)
+  app.ts                             Express setup (security, static assets, routes)
   logger.ts                          pino logger
+  styles/app.css                     Tailwind v4 entry + design tokens
   routes/invoiceRoute.ts             /pdf routes
   controllers/invoiceController.ts   PDF generation
   validations/pdfInputValidations.ts request validation rules
@@ -129,10 +137,34 @@ src/
   utils/sanitize.ts                  PDF-safe text sanitization
   interfaces/index.ts                shared types
 views/
-  index.ejs                          the form page
+  index.ejs                          thin shell (links scripts, includes partials)
+  partials/
+    head.ejs                         meta, theme boot, fonts, stylesheet
+    header.ejs                       title, EN/FR + theme controls
+    form.ejs                         the document form
+    toasts.ejs                       success/error live regions
+    sheet.ejs                        live A4 sheet + preview overlay
+public/
+  css/app.css                        compiled stylesheet (generated, gitignored)
+  js/theme-boot.js                   pre-paint theme (no FOUC)
+  js/app.js                          form behaviour (i18n, totals, submit)
 tests/                               Vitest suite (API, frontend, security, logging)
 ```
+
+## Frontend architecture (chunk R8)
+
+The UI was redesigned to a compiled, partialised, token-driven build.
+
+- **Source styles:** `src/styles/app.css` uses Tailwind v4 (`@import "tailwindcss"`), `@source` paths for `views/` and `public/js/`, a dark-mode `@custom-variant`, and design tokens under `@theme` (paper/ink/rule/accent/ledger). Utilities like `.money` use `font-variant-numeric: tabular-nums`.
+- **Source scripts:** `public/js/theme-boot.js` runs blocking in `<head>` to avoid FOUC; `public/js/app.js` (IIFE, no bundler) handles i18n, totals, the live A4 sheet, validation mapping, and the success flow.
+- **Templates:** `views/index.ejs` is a thin shell that includes `views/partials/{head,header,form,sheet,toasts}.ejs`. The sheet is rendered client-side from `collectData()` and scaled with `ResizeObserver` (jsdom-safe).
+- **Assets:** `express.static('public')` serves compiled CSS/JS. `public/css/` is generated by `npm run build:css` and is not tracked in git.
+- **i18n:** Dictionaries live in `src/locales/{en,fr}.ts` (parity enforced by tests). The browser loads them via `GET /i18n.js` and `applyLang()` re-translates static, placeholder/aria, dynamic labels (items/counter), the sheet and the success panel.
+- **Add a class:** add it to templates or JS strings — Tailwind's `@source` directives will include classes found under `views/` and `public/js/`. Rebuild with `npm run build:css`.
+- **Add copy/i18n:** add keys to both `src/locales/en.ts` and `src/locales/fr.ts` (the `Dictionary` type enforces parity), add `data-i18n` / `data-i18n-ph` / `data-i18n-aria` in templates or call `tUi()` in JS, rebuild and update tests.
+- **Fresh clone:** `npm ci && npm run build && npm start`. If you skip the build, `/css/app.css` will 404 (see notes above).
 
 ## Notes
 
 - `dist/` is generated by `npm run build` and is not tracked in git.
+- `public/css/` is generated by `npm run build:css` and is not tracked in git.

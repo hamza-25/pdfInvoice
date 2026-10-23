@@ -5,6 +5,9 @@ node_modules/
 dist/
 build/
 
+# Generated stylesheet (built by `npm run build:css`)
+public/css/
+
 # TypeScript cache
 *.tsbuildinfo
 
@@ -42,4 +45,5 @@ coverage/
 PROJECT_ASSESSMENT.md
 tasks.md
 translation.md
+redesign.md
 .agents

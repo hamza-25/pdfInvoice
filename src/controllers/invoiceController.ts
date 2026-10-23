@@ -34,6 +34,9 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', 'attachment; filename=static-invoice.pdf');
+  // Expose the generated document number to same-origin clients (chunk R6's
+  // success panel shows it). The PDF itself already prints the same number.
+  res.setHeader('X-Invoice-Number', data.number);
   doc.pipe(res);
 
   // ---- Header ----

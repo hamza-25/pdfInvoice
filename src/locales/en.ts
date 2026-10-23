@@ -69,6 +69,8 @@ export interface Dictionary {
   'ui.currencyLabel': string;
 
   'ui.itemsHeading': string;
+  'ui.itemsOf': string; // {count} placeholder
+  'ui.itemN': string; // {n} placeholder
   'ui.tableDescription': string;
   'ui.tableQty': string;
   'ui.tablePrice': string;
@@ -98,6 +100,19 @@ export interface Dictionary {
   'ui.toastDownloaded': string;
   'ui.errorGeneric': string;
   'ui.errorMore': string; // {count} placeholder
+
+  // ---- Live preview (chunk R5) ----
+  'ui.preview': string;
+  'ui.previewOpen': string;
+  'ui.previewOpenAria': string;
+  'ui.previewCloseAria': string;
+
+  // ---- Success flow (chunk R6) ----
+  'ui.successTitle': string;
+  'ui.successBody': string;
+  'ui.openPreview': string;
+  'ui.downloadAgain': string;
+  'ui.newDocument': string;
 
   // ---- API validation errors (chunk 5.4) ----
   'error.documentTypeRequired': string;
@@ -193,7 +208,9 @@ export const en: Dictionary = {
   'ui.dateLabel': 'Date',
   'ui.dueDateLabel': 'Due Date',
   'ui.currencyLabel': 'Currency',
-  'ui.itemsHeading': 'Items (max: 15)',
+  'ui.itemsHeading': 'Items',
+  'ui.itemsOf': '{count} of 15 items',
+  'ui.itemN': 'Item {n}',
   'ui.tableDescription': 'Description',
   'ui.tableQty': 'Qty',
   'ui.tablePrice': 'Price',
@@ -214,12 +231,26 @@ export const en: Dictionary = {
   'ui.notesHeading': 'Notes',
   'ui.notesLabel': 'Notes',
   'ui.notesPh': 'Thank you for your business!',
-  'ui.submit': 'Submit for Processing',
+  'ui.submit': 'Generate PDF',
   'ui.processing': 'Processing...',
   'ui.toastPreview': 'Invoice opened in a new tab',
   'ui.toastDownloaded': 'Invoice generated successfully',
   'ui.errorGeneric': 'Something went wrong, please try again.',
   'ui.errorMore': '…and {count} more',
+
+  // ---- Live preview (chunk R5) ----
+  'ui.preview': 'Preview',
+  'ui.previewOpen': 'Open full preview',
+  'ui.previewOpenAria': 'Open full preview',
+  'ui.previewCloseAria': 'Close preview',
+
+  // ---- Success flow (chunk R6) ----
+  'ui.successTitle': 'Document ready',
+  'ui.successBody':
+    'Your PDF was generated. Open it in a new tab, download it again, or start a new document.',
+  'ui.openPreview': 'Open preview',
+  'ui.downloadAgain': 'Download again',
+  'ui.newDocument': 'New document',
 
   // API validation errors
   'error.documentTypeRequired': 'Document type is required',

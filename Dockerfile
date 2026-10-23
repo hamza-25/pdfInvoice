@@ -5,6 +5,8 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY tsconfig.json ./
 COPY src ./src
+COPY views ./views
+# `build` compiles the Tailwind stylesheet into public/ and then TypeScript.
 RUN npm run build
 
 # ---- Runtime stage ----
@@ -19,6 +21,7 @@ RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 COPY --from=build /app/dist ./dist
 COPY views ./views
+COPY --from=build /app/public ./public
 
 # Run as the unprivileged `node` user shipped with the base image.
 USER node

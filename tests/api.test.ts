@@ -60,8 +60,8 @@ describe('GET /i18n.js (chunk 5.3)', () => {
     expect(res.headers['content-type']).toContain('javascript');
     expect(res.text).toContain('window.I18N');
     expect(res.text).toContain('"ui.submit"');
-    expect(res.text).toContain('Générer le document'); // FR UI
-    expect(res.text).toContain('Submit for Processing'); // EN UI
+    expect(res.text).toContain('Générer le PDF'); // FR UI
+    expect(res.text).toContain('Generate PDF'); // EN UI
   });
 });
 
@@ -93,6 +93,15 @@ describe('POST /pdf/invoice-generate — happy path', () => {
     expect(text).toContain('Tax (10%)');
     expect(text).toContain('2.00 $'); // tax amount
     expect(text).toContain('22.00 $'); // grand total
+  });
+
+  it('exposes the generated document number in X-Invoice-Number (chunk R6)', async () => {
+    const res = await postInvoice(validPayload);
+
+    const number = res.headers['x-invoice-number'];
+    expect(number).toMatch(/^INV-\d{4}-\d{4}$/);
+    // The same number is printed in the PDF header.
+    expect(extractPdfText(res.body)).toContain(number);
   });
 
   it('handles numeric quantity/price directly (chunk 1.2 type contract)', async () => {

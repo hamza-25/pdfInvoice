@@ -1,0 +1,31 @@
+<!-- Live A4 preview (chunk R5). The sheet itself is rendered by app.js from
+     collectData() — the same payload the PDF endpoint receives. Hidden below
+     1024px; phones use the Preview button in the action bar instead. -->
+<aside id="sheet-pane" class="sheet-pane hidden lg:flex">
+    <div class="sheet-pane-header">
+        <p data-i18n="ui.preview" class="section-title">Preview</p>
+        <button id="preview-open" type="button" data-i18n-aria="ui.previewOpenAria" aria-label="Open full preview" class="sheet-open-btn">
+            <span data-i18n="ui.previewOpen">Open full preview</span>
+            <svg class="h-4 w-4" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"></path></svg>
+        </button>
+    </div>
+    <div class="sheet-viewport">
+        <div class="sheet-stage">
+            <div id="sheet" class="sheet"></div>
+        </div>
+    </div>
+</aside>
+
+<div id="preview-modal" class="preview-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="preview-title">
+    <div class="preview-dialog">
+        <header class="preview-header">
+            <h2 id="preview-title" data-i18n="ui.preview" class="section-title">Preview</h2>
+            <button id="preview-close" type="button" data-i18n-aria="ui.previewCloseAria" aria-label="Close preview" class="preview-close-btn">✕</button>
+        </header>
+        <div class="preview-viewport">
+            <div class="sheet-stage">
+                <div id="sheet-modal" class="sheet"></div>
+            </div>
+        </div>
+    </div>
+</div>
