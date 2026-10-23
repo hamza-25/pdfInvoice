@@ -274,11 +274,11 @@
 
   var showToast = function (el, message) {
     el.textContent = message;
-    el.classList.remove('opacity-0', '-translate-y-2');
+    el.classList.remove('opacity-0', '-translate-y-2', 'translate-y-2');
     el.classList.add('opacity-100', 'translate-y-0');
     setTimeout(function () {
       el.classList.remove('opacity-100', 'translate-y-0');
-      el.classList.add('opacity-0', '-translate-y-2');
+      el.classList.add('opacity-0', 'translate-y-2');
     }, 3000);
   };
 
@@ -341,6 +341,7 @@
   var previewOpen = document.getElementById('preview-open');
   var previewClose = document.getElementById('preview-close');
   var SHEET_WIDTH = 794; // A4 at 96dpi
+  var SHEET_HEIGHT = 1123;
 
   var escapeHtml = function (value) {
     return String(value == null ? '' : value)
@@ -547,11 +548,6 @@
     if (sheetModal) sheetModal.innerHTML = markup;
     updateSheetScales();
   };
-
-  // Scale a fixed-width A4 down to whatever room its viewport has. Guarded
-  // because jsdom (tests) has no layout and no ResizeObserver — there we only
-  // check content, never pixels.
-  var SHEET_HEIGHT = 1123;
 
   var scaleSheet = function (el, viewport) {
     if (!el || !viewport) return;
