@@ -875,10 +875,24 @@
     objectUrls.slice().forEach(revokeUrl);
   };
 
+  var buildPdfFilename = function () {
+    var name = document.getElementById('client-name') ? document.getElementById('client-name').value : '';
+    var city = document.getElementById('client-city') ? document.getElementById('client-city').value : '';
+    var parts = [];
+    if (name && String(name).trim()) {
+      parts.push(String(name).trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, ''));
+    }
+    if (city && String(city).trim()) {
+      parts.push(String(city).trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, ''));
+    }
+    parts.push('invoice');
+    return parts.filter(Boolean).join('-') + '.pdf';
+  };
+
   var downloadUrl = function (url) {
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'invoice.pdf';
+    a.download = buildPdfFilename();
     a.click();
     revokeUrl(url);
   };

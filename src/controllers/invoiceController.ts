@@ -33,7 +33,14 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
   const bottomLimit = doc.page.height - LAYOUT.bottomMargin;
 
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', 'attachment; filename=static-invoice.pdf');
+  const clientName = (data.client && data.client.name) ? String(data.client.name).trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '') : '';
+  const clientCity = (data.client && data.client.city) ? String(data.client.city).trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '') : '';
+  const filenameParts = [];
+  if (clientName) filenameParts.push(clientName);
+  if (clientCity) filenameParts.push(clientCity);
+  filenameParts.push('invoice');
+  const filename = filenameParts.filter(Boolean).join('-') + '.pdf';
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   // Expose the generated document number to same-origin clients (chunk R6's
   // success panel shows it). The PDF itself already prints the same number.
   res.setHeader('X-Invoice-Number', data.number);
