@@ -17,7 +17,6 @@
   var successPanel = document.getElementById('success-panel');
   var successNumber = document.getElementById('success-number');
   var openPreviewBtn = document.getElementById('open-preview-btn');
-  var downloadAgainBtn = document.getElementById('download-again-btn');
   var newDocumentBtn = document.getElementById('new-document-btn');
   var itemsCountEl = document.getElementById('items-count');
   var toggleFromBtn = document.getElementById('toggle-from-btn');
@@ -914,11 +913,6 @@
     }
   };
 
-  var downloadAgain = function () {
-    if (!lastPdfBlob) return;
-    downloadUrl(createTrackedUrl());
-  };
-
   /** Re-draw only the invoice-number line in the active language. Used by
    *  applyLang() so a language switch never re-captures the document type or
    *  moves focus out of the language toggle. */
@@ -995,7 +989,6 @@
       if (lastPdfBlob) openPdf(lastPdfBlob);
     });
   }
-  if (downloadAgainBtn) downloadAgainBtn.addEventListener('click', downloadAgain);
   if (newDocumentBtn) newDocumentBtn.addEventListener('click', newDocument);
 
   form.addEventListener('submit', function (e) {

@@ -111,7 +111,6 @@ export interface Dictionary {
   'ui.successTitle': string;
   'ui.successBody': string;
   'ui.openPreview': string;
-  'ui.downloadAgain': string;
   'ui.newDocument': string;
   'ui.collapse': string;
   'ui.expand': string;
@@ -249,9 +248,8 @@ export const en: Dictionary = {
   // ---- Success flow (chunk R6) ----
   'ui.successTitle': 'Document ready',
   'ui.successBody':
-    'Your PDF was generated. Open it in a new tab, download it again, or start a new document.',
+    'Your PDF was generated. Open it in a new tab or start a new document.',
   'ui.openPreview': 'Open preview',
-  'ui.downloadAgain': 'Download again',
   'ui.newDocument': 'New document',
   'ui.collapse': 'Collapse',
   'ui.expand': 'Expand',
