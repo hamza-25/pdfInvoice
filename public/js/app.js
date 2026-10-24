@@ -20,6 +20,8 @@
   var downloadAgainBtn = document.getElementById('download-again-btn');
   var newDocumentBtn = document.getElementById('new-document-btn');
   var itemsCountEl = document.getElementById('items-count');
+  var toggleFromBtn = document.getElementById('toggle-from-btn');
+  var fromSectionContent = document.getElementById('from-section-content');
 
   // --- i18n (chunk 5.3): same dictionaries the server uses for PDFs ---
   var I18N = window.I18N || {};
@@ -29,6 +31,37 @@
   } catch (e) {
     /* storage unavailable — stay on English */
   }
+
+  var COMPANY_STORAGE_KEY = 'pdfinvoice-company';
+  var loadCompanyInfo = function () {
+    try {
+      var data = localStorage.getItem(COMPANY_STORAGE_KEY);
+      if (!data) return;
+      var parsed = JSON.parse(data);
+      var fields = ['company-name', 'company-address', 'company-city', 'company-phone', 'company-email'];
+      fields.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el && parsed[id] != null) {
+          el.value = parsed[id];
+        }
+      });
+    } catch (e) {
+      /* ignore */
+    }
+  };
+  var saveCompanyInfo = function () {
+    try {
+      var data = {};
+      var fields = ['company-name', 'company-address', 'company-city', 'company-phone', 'company-email'];
+      fields.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) data[id] = el.value;
+      });
+      localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+      /* ignore */
+    }
+  };
 
   var tUi = function (key, params) {
     var text = (I18N[currentLang] && I18N[currentLang][key]) || (I18N.en && I18N.en[key]) || '';
@@ -259,6 +292,9 @@
     if (e.target.matches('.quantity, .price, #tax-rate')) {
       updateTotals();
     }
+    if (e.target.matches('#company-name, #company-address, #company-city, #company-phone, #company-email')) {
+      saveCompanyInfo();
+    }
   });
 
   addItemBtn.addEventListener('click', addNewItem);
@@ -274,11 +310,11 @@
 
   var showToast = function (el, message) {
     el.textContent = message;
-    el.classList.remove('opacity-0', '-translate-y-2', 'translate-y-2');
-    el.classList.add('opacity-100', 'translate-y-0');
+    el.classList.remove('opacity-0', '-translate-y-2', 'translate-y-2', 'pointer-events-none');
+    el.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
     setTimeout(function () {
-      el.classList.remove('opacity-100', 'translate-y-0');
-      el.classList.add('opacity-0', 'translate-y-2');
+      el.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+      el.classList.add('opacity-0', 'translate-y-2', 'pointer-events-none');
     }, 3000);
   };
 
@@ -309,7 +345,7 @@
       taxRate: parseFloat(document.getElementById('tax-rate').value) || 0,
       subtotal: 0,
       total: 0,
-      currency: currencySelect.value || 'USD',
+      currency: currencySelect.value || 'MAD',
       language: currentLang,
     };
 
@@ -839,10 +875,24 @@
     objectUrls.slice().forEach(revokeUrl);
   };
 
+  var buildPdfFilename = function () {
+    var name = document.getElementById('client-name') ? document.getElementById('client-name').value : '';
+    var city = document.getElementById('client-city') ? document.getElementById('client-city').value : '';
+    var parts = [];
+    if (name && String(name).trim()) {
+      parts.push(String(name).trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, ''));
+    }
+    if (city && String(city).trim()) {
+      parts.push(String(city).trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, ''));
+    }
+    parts.push('invoice');
+    return parts.filter(Boolean).join('-') + '.pdf';
+  };
+
   var downloadUrl = function (url) {
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'invoice.pdf';
+    a.download = buildPdfFilename();
     a.click();
     revokeUrl(url);
   };
@@ -922,7 +972,7 @@
     document.getElementById('invoice-date').valueAsDate = new Date();
     document.getElementById('due-date').value = '';
     document.getElementById('tax-rate').value = '0';
-    currencySelect.value = 'USD';
+    currencySelect.value = 'MAD';
     setDocType(docTypeSelect.options[0].value);
 
     invoiceItemsContainer.innerHTML = '';
@@ -1021,7 +1071,15 @@
       });
   });
 
+  if (toggleFromBtn && fromSectionContent) {
+    toggleFromBtn.addEventListener('click', function () {
+      var isHidden = fromSectionContent.classList.toggle('hidden');
+      toggleFromBtn.textContent = isHidden ? (tUi('ui.expand') || 'Expand') : (tUi('ui.collapse') || 'Collapse');
+    });
+  }
+
   // --- Initial setup ---
+  loadCompanyInfo();
   addNewItem();
   setDocType(docTypeSelect.value || docTypeSelect.options[0].value);
   document.getElementById('invoice-date').valueAsDate = new Date();

@@ -113,6 +113,8 @@ export interface Dictionary {
   'ui.openPreview': string;
   'ui.downloadAgain': string;
   'ui.newDocument': string;
+  'ui.collapse': string;
+  'ui.expand': string;
 
   // ---- API validation errors (chunk 5.4) ----
   'error.documentTypeRequired': string;
@@ -251,6 +253,8 @@ export const en: Dictionary = {
   'ui.openPreview': 'Open preview',
   'ui.downloadAgain': 'Download again',
   'ui.newDocument': 'New document',
+  'ui.collapse': 'Collapse',
+  'ui.expand': 'Expand',
 
   // API validation errors
   'error.documentTypeRequired': 'Document type is required',

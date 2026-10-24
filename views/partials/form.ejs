@@ -49,28 +49,33 @@
     <!-- Parties -->
     <section class="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-2">
         <div class="space-y-4">
-            <h2 data-i18n="ui.from" class="section-title">From</h2>
-            <div>
-                <label for="company-name" data-i18n="ui.companyNameLabel" class="field-label">Company name</label>
-                <input id="company-name" type="text" autocomplete="organization" data-i18n-ph="ui.companyNamePh" placeholder="Your Company Name" required class="invoice-input w-full rounded-md p-2.5">
+            <div class="flex items-center justify-between">
+                <h2 data-i18n="ui.from" class="section-title">From</h2>
+                <button type="button" id="toggle-from-btn" class="text-xs font-medium text-accent-ink hover:underline">Collapse</button>
             </div>
-            <div>
-                <label for="company-address" data-i18n="ui.companyAddressLabel" class="field-label">Company address</label>
-                <textarea id="company-address" autocomplete="street-address" data-i18n-ph="ui.companyAddressPh" placeholder="Your Address..." rows="2" class="invoice-input w-full rounded-md p-2.5"></textarea>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div id="from-section-content" class="space-y-4">
                 <div>
-                    <label for="company-city" data-i18n="ui.companyCityLabel" class="field-label">Company city</label>
-                    <input id="company-city" type="text" autocomplete="address-level2" data-i18n-ph="ui.companyCityPh" placeholder="Your company city" class="invoice-input w-full rounded-md p-2.5">
+                    <label for="company-name" data-i18n="ui.companyNameLabel" class="field-label">Company name</label>
+                    <input id="company-name" type="text" autocomplete="organization" data-i18n-ph="ui.companyNamePh" placeholder="Your Company Name" required class="invoice-input w-full rounded-md p-2.5">
                 </div>
                 <div>
-                    <label for="company-phone" data-i18n="ui.companyPhoneLabel" class="field-label">Company phone</label>
-                    <input id="company-phone" type="tel" autocomplete="tel" data-i18n-ph="ui.companyPhonePh" placeholder="Your Company phone" class="invoice-input w-full rounded-md p-2.5">
+                    <label for="company-address" data-i18n="ui.companyAddressLabel" class="field-label">Company address</label>
+                    <textarea id="company-address" autocomplete="street-address" data-i18n-ph="ui.companyAddressPh" placeholder="Your Address..." rows="2" class="invoice-input w-full rounded-md p-2.5"></textarea>
                 </div>
-            </div>
-            <div>
-                <label for="company-email" data-i18n="ui.companyEmailLabel" class="field-label">Company email</label>
-                <input id="company-email" type="text" autocomplete="email" data-i18n-ph="ui.companyEmailPh" placeholder="Your company email" class="invoice-input w-full rounded-md p-2.5">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="company-city" data-i18n="ui.companyCityLabel" class="field-label">Company city</label>
+                        <input id="company-city" type="text" autocomplete="address-level2" data-i18n-ph="ui.companyCityPh" placeholder="Your company city" class="invoice-input w-full rounded-md p-2.5">
+                    </div>
+                    <div>
+                        <label for="company-phone" data-i18n="ui.companyPhoneLabel" class="field-label">Company phone</label>
+                        <input id="company-phone" type="tel" autocomplete="tel" data-i18n-ph="ui.companyPhonePh" placeholder="Your Company phone" class="invoice-input w-full rounded-md p-2.5">
+                    </div>
+                </div>
+                <div>
+                    <label for="company-email" data-i18n="ui.companyEmailLabel" class="field-label">Company email</label>
+                    <input id="company-email" type="text" autocomplete="email" data-i18n-ph="ui.companyEmailPh" placeholder="Your company email" class="invoice-input w-full rounded-md p-2.5">
+                </div>
             </div>
         </div>
 
@@ -116,8 +121,8 @@
         <div>
             <label for="currency" data-i18n="ui.currencyLabel" class="field-label">Currency</label>
             <select id="currency" required class="invoice-input w-full rounded-md p-2.5">
-                <option value="USD">USD</option>
                 <option value="MAD">MAD</option>
+                <option value="USD">USD</option>
                 <option value="EUR">EUR</option>
                 <option value="JPY">JPY</option>
                 <option value="GBP">GBP</option>
@@ -197,15 +202,19 @@
          Wide screens: static, just the button at the end of the form.
          Phones/tablets: pinned to the bottom in the thumb zone. -->
     <section class="action-bar">
-        <div class="action-bar-total">
-            <span data-i18n="ui.total" class="action-bar-label">Total</span>
-            <span id="action-total" class="action-bar-value money">$0.00</span>
+        <div class="action-bar-row">
+            <div class="action-bar-total">
+                <span data-i18n="ui.total" class="action-bar-label">Total</span>
+                <span id="action-total" class="action-bar-value money">$0.00</span>
+            </div>
         </div>
-        <!-- Below 1024px the sheet lives behind this button; on wide screens
-             the sticky pane shows it, so the button disappears there. -->
-        <button id="preview-btn" type="button" data-i18n="ui.preview" class="btn-secondary rounded-md px-5 py-3 text-base">Preview</button>
-        <button id="submit-btn" type="submit" class="btn-primary rounded-md px-8 py-3 text-base">
-            <span id="submit-btn-label" data-i18n="ui.submit">Generate PDF</span>
-        </button>
+        <div class="action-bar-actions">
+            <!-- Below 1024px the sheet lives behind this button; on wide screens
+                 the sticky pane shows it, so the button disappears there. -->
+            <button id="preview-btn" type="button" data-i18n="ui.preview" class="btn-secondary rounded-md px-5 py-3 text-base">Preview</button>
+            <button id="submit-btn" type="submit" class="btn-primary rounded-md px-8 py-3 text-base">
+                <span id="submit-btn-label" data-i18n="ui.submit">Generate PDF</span>
+            </button>
+        </div>
     </section>
 </form>

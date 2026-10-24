@@ -360,28 +360,61 @@ html.dark {
     bottom: 0;
     z-index: 10;
     display: flex;
-    align-items: center;
-    gap: 1rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
     margin-top: 1rem;
     padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
     background-color: color-mix(in srgb, var(--color-paper) 96%, transparent);
     border-top: 1px solid var(--color-rule);
     backdrop-filter: blur(8px);
   }
+  .action-bar-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
   .action-bar-total {
     display: flex;
     flex-direction: column;
     min-width: 0;
-    flex: 1;
   }
   .action-bar-total .action-bar-label {
     font-size: 0.75rem;
     color: var(--color-ink-soft);
   }
   .action-bar-total .action-bar-value {
-    font-size: 1.125rem;
+    font-size: 1.25rem;
     font-weight: 600;
     color: var(--color-accent-ink);
+  }
+  .action-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+  }
+  .action-bar-actions button {
+    flex: 1 1 0%;
+  }
+
+  @media (max-width: 360px) {
+    .action-bar {
+      gap: 0.5rem;
+      padding: 0.625rem 0.75rem calc(0.625rem + env(safe-area-inset-bottom));
+    }
+    .action-bar-actions {
+      gap: 0.5rem;
+    }
+    .action-bar-actions button {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+      font-size: 0.875rem;
+    }
+    .action-bar-total .action-bar-value {
+      font-size: 1.125rem;
+    }
   }
 
   /* On wide screens the bar is just the submit section, inline at the end. */

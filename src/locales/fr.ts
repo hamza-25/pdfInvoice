@@ -112,6 +112,8 @@ export const fr: Dictionary = {
   'ui.openPreview': 'Ouvrir l’aperçu',
   'ui.downloadAgain': 'Télécharger à nouveau',
   'ui.newDocument': 'Nouveau document',
+  'ui.collapse': 'Réduire',
+  'ui.expand': 'Développer',
 
   // ---- Erreurs de validation API (chunk 5.4) ----
   'error.documentTypeRequired': 'Le type de document est requis',
