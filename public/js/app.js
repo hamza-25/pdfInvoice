@@ -345,7 +345,7 @@
       taxRate: parseFloat(document.getElementById('tax-rate').value) || 0,
       subtotal: 0,
       total: 0,
-      currency: currencySelect.value || 'USD',
+      currency: currencySelect.value || 'MAD',
       language: currentLang,
     };
 
@@ -958,7 +958,7 @@
     document.getElementById('invoice-date').valueAsDate = new Date();
     document.getElementById('due-date').value = '';
     document.getElementById('tax-rate').value = '0';
-    currencySelect.value = 'USD';
+    currencySelect.value = 'MAD';
     setDocType(docTypeSelect.options[0].value);
 
     invoiceItemsContainer.innerHTML = '';
