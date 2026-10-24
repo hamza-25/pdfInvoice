@@ -33,11 +33,11 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
   const bottomLimit = doc.page.height - LAYOUT.bottomMargin;
 
   res.setHeader('Content-Type', 'application/pdf');
-  const companyName = (data.company && data.company.name) ? String(data.company.name).trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '') : '';
-  const companyCity = (data.company && data.company.city) ? String(data.company.city).trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '') : '';
+  const clientName = (data.client && data.client.name) ? String(data.client.name).trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '') : '';
+  const clientCity = (data.client && data.client.city) ? String(data.client.city).trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '') : '';
   const filenameParts = [];
-  if (companyName) filenameParts.push(companyName);
-  if (companyCity) filenameParts.push(companyCity);
+  if (clientName) filenameParts.push(clientName);
+  if (clientCity) filenameParts.push(clientCity);
   filenameParts.push('invoice');
   const filename = filenameParts.filter(Boolean).join('-') + '.pdf';
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);

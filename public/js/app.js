@@ -876,8 +876,8 @@
   };
 
   var buildPdfFilename = function () {
-    var name = document.getElementById('company-name') ? document.getElementById('company-name').value : '';
-    var city = document.getElementById('company-city') ? document.getElementById('company-city').value : '';
+    var name = document.getElementById('client-name') ? document.getElementById('client-name').value : '';
+    var city = document.getElementById('client-city') ? document.getElementById('client-city').value : '';
     var parts = [];
     if (name && String(name).trim()) {
       parts.push(String(name).trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, ''));
