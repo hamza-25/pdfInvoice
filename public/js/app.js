@@ -20,6 +20,8 @@
   var downloadAgainBtn = document.getElementById('download-again-btn');
   var newDocumentBtn = document.getElementById('new-document-btn');
   var itemsCountEl = document.getElementById('items-count');
+  var toggleFromBtn = document.getElementById('toggle-from-btn');
+  var fromSectionContent = document.getElementById('from-section-content');
 
   // --- i18n (chunk 5.3): same dictionaries the server uses for PDFs ---
   var I18N = window.I18N || {};
@@ -29,6 +31,37 @@
   } catch (e) {
     /* storage unavailable — stay on English */
   }
+
+  var COMPANY_STORAGE_KEY = 'pdfinvoice-company';
+  var loadCompanyInfo = function () {
+    try {
+      var data = localStorage.getItem(COMPANY_STORAGE_KEY);
+      if (!data) return;
+      var parsed = JSON.parse(data);
+      var fields = ['company-name', 'company-address', 'company-city', 'company-phone', 'company-email'];
+      fields.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el && parsed[id] != null) {
+          el.value = parsed[id];
+        }
+      });
+    } catch (e) {
+      /* ignore */
+    }
+  };
+  var saveCompanyInfo = function () {
+    try {
+      var data = {};
+      var fields = ['company-name', 'company-address', 'company-city', 'company-phone', 'company-email'];
+      fields.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) data[id] = el.value;
+      });
+      localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+      /* ignore */
+    }
+  };
 
   var tUi = function (key, params) {
     var text = (I18N[currentLang] && I18N[currentLang][key]) || (I18N.en && I18N.en[key]) || '';
@@ -258,6 +291,9 @@
     // Update totals on any input change within the form
     if (e.target.matches('.quantity, .price, #tax-rate')) {
       updateTotals();
+    }
+    if (e.target.matches('#company-name, #company-address, #company-city, #company-phone, #company-email')) {
+      saveCompanyInfo();
     }
   });
 
@@ -1021,7 +1057,15 @@
       });
   });
 
+  if (toggleFromBtn && fromSectionContent) {
+    toggleFromBtn.addEventListener('click', function () {
+      var isHidden = fromSectionContent.classList.toggle('hidden');
+      toggleFromBtn.textContent = isHidden ? (tUi('ui.expand') || 'Expand') : (tUi('ui.collapse') || 'Collapse');
+    });
+  }
+
   // --- Initial setup ---
+  loadCompanyInfo();
   addNewItem();
   setDocType(docTypeSelect.value || docTypeSelect.options[0].value);
   document.getElementById('invoice-date').valueAsDate = new Date();
