@@ -274,11 +274,11 @@
 
   var showToast = function (el, message) {
     el.textContent = message;
-    el.classList.remove('opacity-0', '-translate-y-2', 'translate-y-2');
-    el.classList.add('opacity-100', 'translate-y-0');
+    el.classList.remove('opacity-0', '-translate-y-2', 'translate-y-2', 'pointer-events-none');
+    el.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
     setTimeout(function () {
-      el.classList.remove('opacity-100', 'translate-y-0');
-      el.classList.add('opacity-0', 'translate-y-2');
+      el.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+      el.classList.add('opacity-0', 'translate-y-2', 'pointer-events-none');
     }, 3000);
   };
 
