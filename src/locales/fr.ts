@@ -108,9 +108,8 @@ export const fr: Dictionary = {
   // ---- Flux de réussite (chunk R6) ----
   'ui.successTitle': 'Document prêt',
   'ui.successBody':
-    'Votre PDF a été généré. Ouvrez-le dans un nouvel onglet, téléchargez-le à nouveau ou créez un nouveau document.',
+    'Votre PDF a été généré. Ouvrez-le dans un nouvel onglet ou créez un nouveau document.',
   'ui.openPreview': 'Ouvrir l’aperçu',
-  'ui.downloadAgain': 'Télécharger à nouveau',
   'ui.newDocument': 'Nouveau document',
   'ui.collapse': 'Réduire',
   'ui.expand': 'Développer',

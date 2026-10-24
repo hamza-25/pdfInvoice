@@ -160,8 +160,8 @@ describe('form initialization', () => {
   it('starts with one item row and zeroed totals', async () => {
     const { document } = await boot();
     expect(document.querySelectorAll('.item-row').length).toBe(1);
-    expect(document.getElementById('subtotal')!.textContent).toBe('$0.00');
-    expect(document.getElementById('total-amount')!.textContent).toBe('$0.00');
+    expect(document.getElementById('subtotal')!.textContent).toBe('0,00 MAD');
+    expect(document.getElementById('total-amount')!.textContent).toBe('0,00 MAD');
   });
 });
 
@@ -169,8 +169,8 @@ describe('totals calculation', () => {
   it('computes subtotal and total including tax', async () => {
     const { window, document } = await boot();
     setItem(window, document, '2', '10', '10');
-    expect(document.getElementById('subtotal')!.textContent).toBe('$20.00');
-    expect(document.getElementById('total-amount')!.textContent).toBe('$22.00');
+    expect(document.getElementById('subtotal')!.textContent).toBe('20,00 MAD');
+    expect(document.getElementById('total-amount')!.textContent).toBe('22,00 MAD');
   });
 });
 
@@ -393,10 +393,10 @@ describe('mobile-first structure (chunk R4)', () => {
 
   it('mirrors the running total into the sticky action bar', async () => {
     const { window, document } = await boot();
-    expect(document.getElementById('action-total')!.textContent).toBe('$0.00');
+    expect(document.getElementById('action-total')!.textContent).toBe('0,00 MAD');
 
     setItem(window, document, '2', '10', '10');
-    expect(document.getElementById('action-total')!.textContent).toBe('$22.00');
+    expect(document.getElementById('action-total')!.textContent).toBe('22,00 MAD');
 
     const currency = document.getElementById('currency') as HTMLSelectElement;
     currency.value = 'EUR';
@@ -688,7 +688,6 @@ describe('i18n & copy (chunk R7)', () => {
     expect(panel.querySelector('.success-title')!.textContent).toBe(fr['ui.successTitle']);
     expect(panel.querySelector('.success-body')!.textContent).toBe(fr['ui.successBody']);
     expect(document.getElementById('open-preview-btn')!.textContent).toBe(fr['ui.openPreview']);
-    expect(document.getElementById('download-again-btn')!.textContent).toBe(fr['ui.downloadAgain']);
     expect(document.getElementById('new-document-btn')!.textContent).toBe(fr['ui.newDocument']);
     expect(document.getElementById('success-number')!.textContent).toBe(
       `${fr['pdf.invoice.idLabel']} INV-2026-0042`,
@@ -834,10 +833,10 @@ describe('live A4 sheet (chunk R5)', () => {
     // Subtotal 20, tax 2, total 22 — formatted like the form's totals.
     expect(sheetText(document)).toContain('Consulting');
     expect(sheetText(document)).toContain(
-      new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(20),
+      new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD' }).format(20),
     );
     expect(sheetText(document)).toContain(
-      new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(22),
+      new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD' }).format(22),
     );
   });
 
@@ -1141,19 +1140,39 @@ describe('success panel (chunk R6)', () => {
     expect(name.value).toBe('Acme'); // locked decision #3
   });
 
-  it('Download again re-uses the stored blob with zero extra POSTs', async () => {
-    const { window, document, calls, anchorClicks } = await boot();
+  it('New document resets the form, dismisses the panel and releases the blob', async () => {
+    const { window, document, anchorClicks } = await boot();
+    const expectedDate = (document.getElementById('invoice-date') as HTMLInputElement).value;
+
+    (document.getElementById('company-name') as HTMLInputElement).value = 'Acme';
     submit(window, document);
     await flush();
-    expect(calls.length).toBe(1);
-    expect(anchorClicks()).toBe(0);
 
-    (document.getElementById('download-again-btn') as HTMLElement).dispatchEvent(
+    expect(anchorClicks()).toBe(0); // opened in a new tab
+    const panel = document.getElementById('success-panel')!;
+    expect(panel.classList.contains('hidden')).toBe(false);
+
+    (document.getElementById('new-document-btn') as HTMLElement).dispatchEvent(
       new window.Event('click', { bubbles: true }),
     );
 
-    expect(calls.length).toBe(1); // no new request
-    expect(anchorClicks()).toBe(1); // downloaded from the in-memory blob
+    expect(panel.classList.contains('hidden')).toBe(true);
+    expect((document.getElementById('company-name') as HTMLInputElement).value).toBe('');
+    expect((document.getElementById('invoice-date') as HTMLInputElement).value).toBe(expectedDate);
+    expect((document.getElementById('due-date') as HTMLInputElement).value).toBe('');
+    expect((document.getElementById('tax-rate') as HTMLInputElement).value).toBe('0');
+    expect((document.getElementById('currency') as HTMLSelectElement).value).toBe('MAD');
+    expect(document.querySelectorAll('.item-row').length).toBe(1);
+    expect((document.querySelector('.item-row .description') as HTMLInputElement).value).toBe('');
+    expect((document.querySelector('.item-row .quantity') as HTMLInputElement).value).toBe('1');
+    expect((document.querySelector('.item-row .price') as HTMLInputElement).value).toBe('0.00');
+
+    // The blob is gone: Open preview is inert after the reset.
+    const before = anchorClicks();
+    (document.getElementById('open-preview-btn') as HTMLElement).dispatchEvent(
+      new window.Event('click', { bubbles: true }),
+    );
+    expect(anchorClicks()).toBe(before);
   });
 
   it('Open preview re-opens the stored blob without another POST', async () => {
@@ -1237,9 +1256,9 @@ describe('success panel (chunk R6)', () => {
     expect((document.getElementById('tax-rate') as HTMLInputElement).value).toBe('0');
     expect(document.getElementById('success-panel')!.classList.contains('hidden')).toBe(true);
 
-    // The blob is gone: Download again is inert after the reset.
+    // The blob is gone: Open preview is inert after the reset.
     const before = anchorClicks();
-    (document.getElementById('download-again-btn') as HTMLElement).dispatchEvent(
+    (document.getElementById('open-preview-btn') as HTMLElement).dispatchEvent(
       new window.Event('click', { bubbles: true }),
     );
     expect(anchorClicks()).toBe(before);
