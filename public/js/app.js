@@ -943,14 +943,11 @@
     if (successPanel) successPanel.classList.add('hidden');
   };
 
-  /** Explicit reset — the only path that wipes the form (chunk R6). */
+  /** Explicit reset — the only path that wipes the form (chunk R6).
+   *  Company fields are the saved "From" profile (localStorage), so they are
+   *  deliberately left untouched — exactly like a page reload. */
   var newDocument = function () {
     [
-      'company-name',
-      'company-address',
-      'company-city',
-      'company-phone',
-      'company-email',
       'client-name',
       'client-address',
       'client-city',
