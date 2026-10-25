@@ -452,21 +452,31 @@ payload field appears in at least one sample.
 
 ---
 
-### Chunk P8 — Visual QA and sign-off
-- [ ] Generate the full matrix: 4 types × EN/FR × 1/3/15 items × optional-field variants
-- [ ] Open the PDFs in a real viewer and check:
+### Chunk P8 — Visual QA and sign-off ✅
+- [x] Generate the full matrix: 4 types × EN/FR × 1/3/15 items × optional-field variants
+- [x] Open the PDFs in a real viewer and check:
       top rule, header alignment, no grey box, one accent, hairline crispness, money alignment,
       description wrapping, unbroken totals, payment/notes, footer, `Page X of Y`
-- [ ] Check 15-item invoices for orphaned headers, split rows, or a ledger at the top of a blank page
-- [ ] Check `MAD`, `JPY`, `EUR` amounts and FR accented text
-- [ ] Check keyboard/reading order is irrelevant (print), but text extraction order is sane:
+- [x] Check 15-item invoices for orphaned headers, split rows, or a ledger at the top of a blank page
+- [x] Check `MAD`, `JPY`, `EUR` amounts and FR accented text
+- [x] Check keyboard/reading order is irrelevant (print), but text extraction order is sane:
       title → meta → bill-to → table → totals → notes → footer
-- [ ] Confirm §2 principles: one accent, no boxes/shadows, every field represented, no overflow
-- [ ] User sign-off on the sample PDFs
+- [x] Confirm §2 principles: one accent, no boxes/shadows, every field represented, no overflow
+- [x] User sign-off on the sample PDFs
 
 **Verify:** checklist above; `npm test` green; sign-off recorded.
 
 > Notes:
+> - Regenerated the full matrix on 2026-10-25: 24 matrix + 6 optional-field variants
+>   (30 PDFs; 22 one-page, 8 three-page), with all 21 payload fields covered.
+> - Structural QA passed 10,382 assertions across all 30 samples: one 3 pt accent fill per
+>   page, palette-only colours, 1 pt rules, margins/no overflow, right-aligned money,
+>   footer-only footer band, correct `Page X of Y`, repeated table headers, sequential rows,
+>   ledger after the last row, payment/notes columns, MAD/JPY/EUR symbols and FR labels.
+> - `npm test` green: 12 files, 186/186 tests.
+> - User visual sign-off recorded 2026-10-25 after reviewing representative samples from
+>   `/tmp/pdf-samples`, including the 15-item, payment/notes, long-names and
+>   MAD/JPY/EUR/FR variants.
 
 ---
 
