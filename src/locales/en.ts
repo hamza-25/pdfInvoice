@@ -28,6 +28,8 @@ export interface Dictionary {
   'pdf.total': string;
   'pdf.thanks': string;
   'pdf.contactNote': string;
+  'pdf.payment': string;
+  'pdf.notes': string;
   'pdf.pageOf': string; // {current} / {total} placeholders
 
   // ---- Website UI (resolved client-side via /i18n.js) ----
@@ -177,6 +179,8 @@ export const en: Dictionary = {
   'pdf.total': 'TOTAL',
   'pdf.thanks': 'Thank you for your business!',
   'pdf.contactNote': 'If you have any questions about this invoice, please contact Us',
+  'pdf.payment': 'PAYMENT METHOD',
+  'pdf.notes': 'NOTES',
   'pdf.pageOf': 'Page {current} of {total}',
 
   // UI

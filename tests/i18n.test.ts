@@ -31,6 +31,10 @@ describe('t() (chunk 5.1)', () => {
     expect(t('pdf.column.unitPrice', 'en')).toBe('UNIT PRICE');
     expect(t('pdf.subtotal', 'fr')).toBe('SOUS-TOTAL');
     expect(t('pdf.subtotal', 'en')).toBe('SUBTOTAL');
+    expect(t('pdf.payment', 'fr')).toBe('MODE DE PAIEMENT');
+    expect(t('pdf.payment', 'en')).toBe('PAYMENT METHOD');
+    expect(t('pdf.notes', 'fr')).toBe('NOTES');
+    expect(t('pdf.notes', 'en')).toBe('NOTES');
   });
 
   it('replaces {placeholder} params (page numbers)', () => {

@@ -3,7 +3,7 @@ import type { clientData, companyData } from '../interfaces';
 import { formatDate, formatMoney } from './currency';
 import { t } from './i18n';
 import type { InvoiceLine, InvoiceModel } from './invoiceModel';
-import { COLORS, COLUMNS, FONTS, LAYOUT, PAGE, SPACE, TOTALS, TYPE } from './pdfLayout';
+import { COLORS, COLUMNS, FONTS, FOOTER, NOTES, PAGE, SPACE, TOTALS, TYPE } from './pdfLayout';
 
 const LEFT_WIDTH = 250;
 const META_WIDTH = 210;
@@ -16,10 +16,24 @@ const CONTINUATION_RULE_OFFSET = 20;
 const TOTALS_VALUE_WIDTH = 110;
 /** Breathing room between a ledger label and its value column. */
 const TOTALS_LABEL_GAP = 8;
+/** Separator between the non-empty company, phone and email footer fields. */
+const FOOTER_SEPARATOR = ' · ';
 
 interface MetaRow {
   label: string;
   value: string;
+}
+
+interface NoteBlock {
+  label: string;
+  value: string;
+}
+
+interface NoteMetrics {
+  /** Measured label height. */
+  labelHeight: number;
+  /** Full block height: label + gap + wrapped value. */
+  height: number;
 }
 
 type Party = companyData | clientData;
@@ -397,6 +411,136 @@ export const renderInvoicePdf = (doc: PDFKit.PDFDocument, model: InvoiceModel): 
     return y + TOTALS.totalHeight;
   };
 
+  /** Measure a payment/notes block before reserving space for it. */
+  const measureNoteBlock = (block: NoteBlock, width: number): NoteMetrics => {
+    doc.font(TYPE.sectionLabel.font).fontSize(TYPE.sectionLabel.size);
+    const labelHeight = doc.heightOfString(block.label, {
+      width,
+      characterSpacing: TYPE.sectionLabel.tracking,
+    });
+
+    doc.font(TYPE.metaValue.font).fontSize(TYPE.metaValue.size);
+    const valueHeight = doc.heightOfString(block.value, { width, lineGap: 1 });
+
+    return { labelHeight, height: labelHeight + NOTES.labelGap + valueHeight };
+  };
+
+  /** Draw an accent label and its wrapped value. */
+  const drawNoteBlock = (
+    block: NoteBlock,
+    x: number,
+    y: number,
+    width: number,
+    metrics: NoteMetrics,
+  ): void => {
+    doc
+      .font(TYPE.sectionLabel.font)
+      .fontSize(TYPE.sectionLabel.size)
+      .fillColor(COLORS.accent)
+      .text(block.label, x, y, { width, characterSpacing: TYPE.sectionLabel.tracking });
+    doc
+      .font(TYPE.metaValue.font)
+      .fontSize(TYPE.metaValue.size)
+      .fillColor(COLORS.ink)
+      .text(block.value, x, y + metrics.labelHeight + NOTES.labelGap, { width, lineGap: 1 });
+  };
+
+  /** Payment and notes are only printed when the payload actually has text. */
+  const closingBlocks = (): NoteBlock[] => {
+    const blocks: NoteBlock[] = [];
+    const payment = model.paymentType.trim();
+    const notes = model.notes.trim();
+    if (payment) {
+      blocks.push({ label: t('pdf.payment', lang), value: payment });
+    }
+    if (notes) {
+      blocks.push({ label: t('pdf.notes', lang), value: notes });
+    }
+    return blocks;
+  };
+
+  /**
+   * Trim a footer line to one line, appending an ellipsis if needed. Drawing it
+   * without a width afterwards guarantees PDFKit never wraps it into the page
+   * margin.
+   */
+  const fitSingleLine = (text: string, width: number): string => {
+    const oneLine = text.replace(/[\r\n\t]+/g, ' ');
+    doc.font(TYPE.footer.font).fontSize(TYPE.footer.size);
+    if (doc.widthOfString(oneLine) <= width) {
+      return oneLine;
+    }
+
+    const characters = [...oneLine];
+    while (characters.length > 0 && doc.widthOfString(`${characters.join('')}…`) > width) {
+      characters.pop();
+    }
+    return `${characters.join('').trimEnd()}…`;
+  };
+
+  /**
+   * Stamp the footer strip on every buffered page: hairline and page number
+   * everywhere, thanks/contact copy on the final page. Bottom margins are
+   * disabled while stamping so PDFKit never spills an extra page.
+   */
+  const drawFooters = (): void => {
+    const range = doc.bufferedPageRange();
+    const lastPage = range.start + range.count - 1;
+    const ruleY = contentBottom;
+    const textWidth = contentRight - PAGE.margin - FOOTER.pageNumberWidth - FOOTER.columnGap;
+    const thanksY = ruleY + FOOTER.topGap;
+    const pageNumberY = thanksY + (TYPE.footerLead.size - TYPE.footer.size) * 0.72;
+    const contactNoteY = thanksY + TYPE.footerLead.leading;
+    const contactY = contactNoteY + TYPE.footer.leading;
+    const contactLine = fitSingleLine(
+      [model.company.name, model.company.phone, model.company.email]
+        .map((part) => part?.trim() ?? '')
+        .filter(Boolean)
+        .join(FOOTER_SEPARATOR),
+      textWidth,
+    );
+
+    for (let i = range.start; i < range.start + range.count; i++) {
+      doc.switchToPage(i);
+      const savedBottomMargin = doc.page.margins.bottom;
+      doc.page.margins.bottom = 0;
+
+      doc
+        .moveTo(PAGE.margin, ruleY)
+        .lineTo(contentRight, ruleY)
+        .lineWidth(1)
+        .strokeColor(COLORS.rule)
+        .stroke();
+
+      if (i === lastPage) {
+        doc
+          .font(TYPE.footerLead.font)
+          .fontSize(TYPE.footerLead.size)
+          .fillColor(COLORS.ink)
+          .text(t('pdf.thanks', lang), PAGE.margin, thanksY, { width: textWidth });
+        doc
+          .font(TYPE.footer.font)
+          .fontSize(TYPE.footer.size)
+          .fillColor(COLORS.inkSoft)
+          .text(t('pdf.contactNote', lang), PAGE.margin, contactNoteY, { width: textWidth });
+        doc.text(contactLine, PAGE.margin, contactY, { lineBreak: false });
+      }
+
+      doc
+        .font(TYPE.footer.font)
+        .fontSize(TYPE.footer.size)
+        .fillColor(COLORS.inkSoft)
+        .text(
+          t('pdf.pageOf', lang, { current: i - range.start + 1, total: range.count }),
+          contentRight - FOOTER.pageNumberWidth,
+          pageNumberY,
+          { width: FOOTER.pageNumberWidth, align: 'right' },
+        );
+
+      doc.page.margins.bottom = savedBottomMargin;
+    }
+  };
+
   // ---- Items table ----
   let tableBottom = drawTableHeader(billToTop + billToHeight + SPACE.xl);
 
@@ -410,44 +554,22 @@ export const renderInvoicePdf = (doc: PDFKit.PDFDocument, model: InvoiceModel): 
 
   // ---- Totals ledger (P4) ----
   const ledgerTop = ensureSpace(tableBottom, TOTALS.height);
-  let cursorY = drawTotals(ledgerTop);
+  const ledgerBottom = drawTotals(ledgerTop);
 
-  // ---- Footer (legacy; P5 replaces this) ----
-  cursorY += LAYOUT.totals.footerGap;
-  cursorY = ensureSpace(cursorY, LAYOUT.totals.footerHeight);
-  doc
-    .font(FONTS.sans)
-    .fontSize(10)
-    .fillColor(COLORS.ink)
-    .text(t('pdf.thanks', lang), LAYOUT.margin, cursorY)
-    .fontSize(8)
-    .text(t('pdf.contactNote', lang), LAYOUT.margin, cursorY + 40)
-    .text(
-      `[${model.company.name}, ${model.company.phone ?? ''}, ${model.company.email ?? ''}]`,
-      LAYOUT.margin,
-      cursorY + 50,
-    );
+  // ---- Payment and notes (P5) ----
+  const blocks = closingBlocks();
+  if (blocks.length > 0) {
+    const blockWidth = blocks.length === 2 ? NOTES.columnWidth : PAGE.contentWidth;
+    const metrics = blocks.map((block) => measureNoteBlock(block, blockWidth));
+    const blockHeight = Math.max(...metrics.map((metric) => metric.height));
 
-  // ---- Page numbers ----
-  // With bufferPages the content is already written but not yet flushed, so
-  // every buffered page can be visited to stamp "Page X of Y".
-  const range = doc.bufferedPageRange();
-  for (let i = range.start; i < range.start + range.count; i++) {
-    doc.switchToPage(i);
-    // Writing this close to the page edge needs the bottom margin disabled,
-    // otherwise PDFKit would spill the footer onto yet another page.
-    const savedBottomMargin = doc.page.margins.bottom;
-    doc.page.margins.bottom = 0;
-    doc
-      .font(FONTS.sans)
-      .fontSize(8)
-      .fillColor(COLORS.ink)
-      .text(
-        t('pdf.pageOf', lang, { current: i - range.start + 1, total: range.count }),
-        LAYOUT.margin,
-        doc.page.height - LAYOUT.footer.fromBottom,
-        { width: contentRight - LAYOUT.margin, align: 'center' },
-      );
-    doc.page.margins.bottom = savedBottomMargin;
+    const blockTop = ensureSpace(ledgerBottom, NOTES.topGap + blockHeight) + NOTES.topGap;
+    blocks.forEach((block, index) => {
+      const x = PAGE.margin + index * (blockWidth + NOTES.columnGap);
+      drawNoteBlock(block, x, blockTop, blockWidth, metrics[index]);
+    });
   }
+
+  // ---- Footer and page numbers (P5) ----
+  drawFooters();
 };

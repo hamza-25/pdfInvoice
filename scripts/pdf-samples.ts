@@ -160,8 +160,12 @@ const variantSamples = (): SampleSpec[] => [
   {
     file: 'variant-service-invoice_fr_mad.pdf',
     kind: 'variant',
-    note: 'French locale + MAD currency',
-    payload: basePayload('SERVICE INVOICE', 'fr', itemsFor(3), { currency: 'MAD' }),
+    note: 'French locale + MAD currency + payment/notes',
+    payload: basePayload('SERVICE INVOICE', 'fr', itemsFor(3), {
+      currency: 'MAD',
+      paymentType: 'Virement bancaire — 30 jours',
+      notes: 'Merci de votre confiance. Veuillez indiquer le numéro de facture lors du paiement.',
+    }),
   },
   {
     file: 'variant-product-invoice_en_jpy.pdf',

@@ -84,6 +84,12 @@ describe('POST /pdf/invoice-generate — happy path', () => {
     expect(text).toContain('Acme');
     expect(text).toContain('Bob');
     expect(text).toContain('Widget');
+    expect(text).toContain('PAYMENT METHOD');
+    expect(text).toContain('Bank Transfer');
+    expect(text).toContain('NOTES');
+    expect(text).toContain('Thank you!');
+    expect(text).toContain('Acme · 123 · a@b.com');
+    expect(text).not.toContain('[Acme');
   });
 
   it('computes subtotal, tax and total correctly (2 x 10 @ 10% = 22)', async () => {
@@ -131,7 +137,8 @@ describe('POST /pdf/invoice-generate — optional fields / undefined guards', ()
     const res = await postInvoice(validPayload);
     const text = extractPdfText(res.body);
     expect(text.toLowerCase()).not.toContain('undefined');
-    expect(text).toContain('[Acme'); // footer contact line renders, just empty entries
+    expect(text).toContain('Thank you for your business!'); // footer renders
+    expect(text).not.toContain('[Acme'); // no bracketed debug-style contact line
   });
 });
 
@@ -332,6 +339,61 @@ describe('POST /pdf/invoice-generate — totals ledger (P4)', () => {
     expect(text).toContain('Taxe (10%)');
     expect(text).toContain('TOTAL');
     expect(text).toContain('27.50 $');
+  });
+});
+
+describe('POST /pdf/invoice-generate — payment, notes and footer (P5)', () => {
+  it('prints payment and notes only when they are supplied', async () => {
+    const withExtras = await postInvoice({
+      ...validPayload,
+      paymentType: 'Bank Transfer',
+      notes: 'Please pay within 30 days.',
+    });
+    expect(withExtras.status).toBe(200);
+
+    const text = extractPdfText(withExtras.body);
+    expect(text).toContain('PAYMENT METHOD');
+    expect(text).toContain('Bank Transfer');
+    expect(text).toContain('NOTES');
+    expect(text).toContain('Please pay within 30 days.');
+
+    const withoutExtras = await postInvoice(validPayload);
+    expect(withoutExtras.status).toBe(200);
+
+    const plain = extractPdfText(withoutExtras.body);
+    expect(plain).not.toContain('PAYMENT METHOD');
+    expect(plain).not.toContain('NOTES');
+  });
+
+  it('joins the non-empty company contact fields in the footer', async () => {
+    const res = await postInvoice({
+      ...validPayload,
+      company: { name: 'Acme', phone: '123', email: 'a@b.com' },
+    });
+    expect(res.status).toBe(200);
+
+    const text = extractPdfText(res.body);
+    expect(text).toContain('Thank you for your business!');
+    expect(text).toContain('Acme · 123 · a@b.com');
+    expect(text).not.toContain('[Acme');
+    expect(text).not.toContain('undefined');
+  });
+
+  it('localises the payment and notes labels in French', async () => {
+    const res = await postInvoice({
+      ...validPayload,
+      language: 'fr',
+      paymentType: 'Virement bancaire',
+      notes: 'Merci de votre confiance.',
+    });
+    expect(res.status).toBe(200);
+
+    const text = extractPdfText(res.body);
+    expect(text).toContain('MODE DE PAIEMENT');
+    expect(text).toContain('Virement bancaire');
+    expect(text).toContain('NOTES');
+    expect(text).toContain('Merci de votre confiance.');
+    expect(text).not.toContain('PAYMENT METHOD');
   });
 });
 

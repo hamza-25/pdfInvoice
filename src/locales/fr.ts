@@ -33,6 +33,8 @@ export const fr: Dictionary = {
   'pdf.total': 'TOTAL',
   'pdf.thanks': 'Merci pour votre affaire !',
   'pdf.contactNote': 'Si vous avez des questions concernant cette facture, veuillez nous contacter',
+  'pdf.payment': 'MODE DE PAIEMENT',
+  'pdf.notes': 'NOTES',
   'pdf.pageOf': 'Page {current} sur {total}',
 
   // UI

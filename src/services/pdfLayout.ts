@@ -6,7 +6,7 @@ export const PAGE = {
   height: 841.89,
   /** Left/right/top margin. */
   margin: 56,
-  /** Space reserved below the content for the page-number footer. */
+  /** Space reserved below the content for the footer (rule, copy, page number). */
   footerReserved: 40,
   /** Usable width between the left and right margins. */
   contentWidth: 483.28,
@@ -39,6 +39,7 @@ export const TYPE = {
   tableHeader: { font: FONTS.sansBold, size: 7.5, leading: 9, tracking: 0.8 },
   tableBody: { font: FONTS.sans, size: 9, leading: 12 },
   grandTotal: { font: FONTS.sansBold, size: 13, leading: 15 },
+  footerLead: { font: FONTS.sans, size: 9, leading: 11 },
   footer: { font: FONTS.sans, size: 7.5, leading: 10 },
 } as const;
 
@@ -87,24 +88,31 @@ export const TOTALS = {
 } as const;
 
 /**
- * Legacy footer constants still used until P5 replaces the closing block.
+ * Payment and notes blocks (P5). Two blocks sit side-by-side; a lone block
+ * spans the full content width.
  */
-export const LAYOUT = {
-  /** Page margin on every side. */
-  margin: PAGE.margin,
+export const NOTES = {
+  /** Width of each block when both payment and notes are present. */
+  columnWidth: 230,
+  /** Gap between the two columns; together they fill the content width. */
+  columnGap: PAGE.contentWidth - 230 * 2,
+  /** Gap between the ledger and the first closing block. */
+  topGap: SPACE.xl,
+  /** Gap between a block's label and its value. */
+  labelGap: SPACE.xs,
+} as const;
 
-  totals: {
-    /** Gap between the total line and the footer. */
-    footerGap: 20,
-    /** Space reserved for the footer block (page-break check). */
-    footerHeight: 55,
-  },
-
-  /** Page-number footer stamped on every page. */
-  footer: {
-    /** Distance from the bottom edge of the page to the footer text. */
-    fromBottom: 30,
-  },
+/**
+ * Footer strip (P5): a hairline, thanks/contact copy on the left and the page
+ * number on the right. The strip lives inside `PAGE.footerReserved`.
+ */
+export const FOOTER = {
+  /** Gap between the rule and the thanks line. */
+  topGap: SPACE.sm,
+  /** Width reserved on the right for "Page X of Y". */
+  pageNumberWidth: 100,
+  /** Gap between the left text column and the page number. */
+  columnGap: SPACE.lg,
 } as const;
 
 /** The three date/presentation families the PDF knows about. */
