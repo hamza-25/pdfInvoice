@@ -1,0 +1,344 @@
+/**
+ * Generate a QA matrix of invoice PDFs without starting a server.
+ *
+ * Usage: npm run samples:pdf
+ * Output: /tmp/pdf-samples (override with PDF_SAMPLES_DIR)
+ *
+ * The runner boots the real Express app through supertest, so every sample goes
+ * through the same validation, number generation and PDF streaming path the
+ * browser uses. It also writes a normalised text dump of the canonical 3-item
+ * invoice so later refactors can be diffed for unintended text changes.
+ */
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import request from 'supertest';
+import type { Response as SuperAgentResponse } from 'superagent';
+import type { Express } from 'express';
+import { extractPdfText, countPdfPages, isPdf } from '../tests/helpers/pdf';
+import type { invoiceData, invoiceItem } from '../src/interfaces';
+
+// Keep the app quiet and disable the PDF rate limit while generating the matrix.
+// This must happen before `src/app` is imported (done dynamically in main()).
+process.env.NODE_ENV = 'test';
+process.env.LOG_LEVEL = 'silent';
+
+const OUTPUT_DIR = process.env.PDF_SAMPLES_DIR ?? path.join(os.tmpdir(), 'pdf-samples');
+const BASELINE_FILE = 'matrix-service-invoice_en_3-items.pdf';
+
+type SampleKind = 'matrix' | 'variant';
+
+interface SampleSpec {
+  file: string;
+  kind: SampleKind;
+  note: string;
+  payload: invoiceData;
+}
+
+interface SampleResult extends SampleSpec {
+  bytes: number;
+  pages: number;
+  invoiceNumber: string;
+  contentDisposition: string;
+  text: string;
+}
+
+const COMPANY = {
+  name: 'Northwind Studio',
+  address: '14 Rue des Lilas',
+  city: '75011 Paris',
+  phone: '+33 1 45 67 89 00',
+  email: 'hello@northwind.studio',
+};
+
+const CLIENT = {
+  name: 'Atelier Moreau',
+  address: '8 Quai Saint-Vincent',
+  city: '69001 Lyon',
+  phone: '+33 4 78 12 34 56',
+  email: 'compta@ateliermoreau.fr',
+};
+
+const ISSUE_DATE = '2026-10-24';
+const DUE_DATE = '2026-11-23';
+
+const DOCUMENT_TYPES = ['SERVICE INVOICE', 'PRODUCT INVOICE', 'QUOTE', 'RECEIPT'] as const;
+const LANGUAGES = ['en', 'fr'] as const;
+const ITEM_COUNTS = [1, 3, 15] as const;
+
+const pad2 = (value: number): string => (value < 10 ? `0${value}` : String(value));
+
+const slug = (value: string): string =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+
+const itemsFor = (count: number): invoiceItem[] => {
+  if (count === 1) {
+    return [{ description: 'Brand identity system', quantity: 1, price: 2400 }];
+  }
+  if (count === 3) {
+    return [
+      { description: 'Brand identity system', quantity: 1, price: 2400 },
+      { description: 'Editorial layout and typesetting', quantity: 2, price: 850 },
+      { description: 'Print production supervision', quantity: 1, price: 350 },
+    ];
+  }
+  return Array.from({ length: count }, (_, index) => ({
+    description:
+      `ITEM_${pad2(index + 1)} ` +
+      'lorem ipsum dolor sit amet consectetur adipiscing elit '.repeat(6),
+    quantity: 1,
+    price: index + 1,
+  }));
+};
+
+const itemsLabel = (count: number): string =>
+  count === 15 ? '15-long-items' : `${count}-item${count === 1 ? '' : 's'}`;
+
+const basePayload = (
+  documentType: string,
+  language: 'en' | 'fr',
+  items: invoiceItem[],
+  overrides: Partial<invoiceData> = {},
+): invoiceData => ({
+  documentType,
+  company: { ...COMPANY },
+  client: { ...CLIENT },
+  issueDate: ISSUE_DATE,
+  dueDate: DUE_DATE,
+  items,
+  taxRate: 10,
+  currency: 'USD',
+  language,
+  ...overrides,
+});
+
+const matrixSamples = (): SampleSpec[] => {
+  const samples: SampleSpec[] = [];
+  for (const documentType of DOCUMENT_TYPES) {
+    for (const language of LANGUAGES) {
+      for (const count of ITEM_COUNTS) {
+        samples.push({
+          file: `matrix-${slug(documentType)}_${language}_${itemsLabel(count)}.pdf`,
+          kind: 'matrix',
+          note: `${documentType} / ${language} / ${count} item${count === 1 ? '' : 's'}`,
+          payload: basePayload(documentType, language, itemsFor(count)),
+        });
+      }
+    }
+  }
+  return samples;
+};
+
+const variantSamples = (): SampleSpec[] => [
+  {
+    file: 'variant-service-invoice_en_payment-notes.pdf',
+    kind: 'variant',
+    note: 'payment type + notes',
+    payload: basePayload('SERVICE INVOICE', 'en', itemsFor(3), {
+      paymentType: 'Bank transfer — 30 days',
+      notes: 'Thank you for your business. Please reference the invoice number with your payment.',
+    }),
+  },
+  {
+    file: 'variant-service-invoice_en_minimal.pdf',
+    kind: 'variant',
+    note: 'required fields only; no optional contact/due/payment/notes',
+    payload: {
+      documentType: 'SERVICE INVOICE',
+      company: { name: 'Acme' },
+      client: { name: 'Bob' },
+      issueDate: '2026-01-01',
+      items: [{ description: 'Widget', quantity: 2, price: 10 }],
+      taxRate: 10,
+      currency: 'USD',
+      language: 'en',
+    },
+  },
+  {
+    file: 'variant-service-invoice_fr_mad.pdf',
+    kind: 'variant',
+    note: 'French locale + MAD currency',
+    payload: basePayload('SERVICE INVOICE', 'fr', itemsFor(3), { currency: 'MAD' }),
+  },
+  {
+    file: 'variant-product-invoice_en_jpy.pdf',
+    kind: 'variant',
+    note: 'JPY zero-decimal currency',
+    payload: basePayload(
+      'PRODUCT INVOICE',
+      'en',
+      [
+        { description: 'Studio lamp', quantity: 3, price: 12000 },
+        { description: 'Desk organizer', quantity: 1, price: 4500 },
+      ],
+      { currency: 'JPY' },
+    ),
+  },
+  {
+    file: 'variant-service-invoice_en_long-names.pdf',
+    kind: 'variant',
+    note: 'long party names/addresses for header overflow QA',
+    payload: basePayload('SERVICE INVOICE', 'en', itemsFor(3), {
+      company: {
+        name: 'Northwind Studio — Brand, Editorial and Digital Design Practice',
+        address: '14 Rue des Lilas, Bâtiment C, 3e étage, 75011 Paris, France',
+        city: 'Paris',
+        phone: '+33 1 45 67 89 00',
+        email: 'hello@northwind.studio',
+      },
+      client: {
+        name: 'Atelier Moreau — Architecture, Interiors and Scenography',
+        address: '8 Quai Saint-Vincent, Atelier 4, 69001 Lyon, France',
+        city: 'Lyon',
+        phone: '+33 4 78 12 34 56',
+        email: 'comptabilite@ateliermoreau.fr',
+      },
+    }),
+  },
+  {
+    file: 'variant-receipt_en_zero-tax.pdf',
+    kind: 'variant',
+    note: 'zero-tax edge case',
+    payload: basePayload(
+      'RECEIPT',
+      'en',
+      [{ description: 'Consulting session', quantity: 1, price: 500 }],
+      { taxRate: 0 },
+    ),
+  },
+];
+
+/** Collect the raw response body as a Buffer (the response is a PDF). */
+const binaryParser = (
+  res: NodeJS.ReadableStream,
+  callback: (err: Error | null, body: Buffer) => void,
+) => {
+  const chunks: Buffer[] = [];
+  res.on('data', (chunk: Buffer) => chunks.push(chunk));
+  res.on('end', () => callback(null, Buffer.concat(chunks)));
+};
+
+const normaliseInvoiceNumber = (text: string): string =>
+  text.replace(/INV-\d{4}-\d{4}/g, 'INV-YYYY-NNNN');
+
+const renderSample = async (app: Express, spec: SampleSpec): Promise<SampleResult> => {
+  const res = await request(app)
+    .post('/pdf/invoice-generate')
+    .send(spec.payload as object)
+    .buffer(true)
+    .parse(
+      binaryParser as unknown as (
+        res: SuperAgentResponse,
+        cb: (err: Error | null, body: unknown) => void,
+      ) => void,
+    );
+
+  const body = res.body as Buffer;
+  if (res.status !== 200 || !isPdf(body)) {
+    const preview = Buffer.isBuffer(body) ? body.subarray(0, 200).toString('utf8') : String(body);
+    throw new Error(`${spec.file}: expected 200 + PDF, got ${res.status} (${preview})`);
+  }
+
+  fs.writeFileSync(path.join(OUTPUT_DIR, spec.file), body);
+
+  return {
+    ...spec,
+    bytes: body.length,
+    pages: countPdfPages(body),
+    invoiceNumber: String(res.headers['x-invoice-number'] ?? 'unknown'),
+    contentDisposition: String(res.headers['content-disposition'] ?? ''),
+    text: extractPdfText(body),
+  };
+};
+
+const main = async (): Promise<void> => {
+  // Dynamic import guarantees the environment above is set before the app (and
+  // its logger / rate limiter) is loaded.
+  const { default: app } = await import('../src/app');
+
+  fs.rmSync(OUTPUT_DIR, { recursive: true, force: true });
+  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+
+  const samples = [...matrixSamples(), ...variantSamples()];
+  const results: SampleResult[] = [];
+
+  for (const sample of samples) {
+    results.push(await renderSample(app, sample));
+  }
+
+  const baseline = results.find((sample) => sample.file === BASELINE_FILE);
+  if (!baseline) {
+    throw new Error(`Baseline sample ${BASELINE_FILE} was not generated`);
+  }
+
+  const baselinePayloadFile = 'baseline-3-items.payload.json';
+  fs.writeFileSync(
+    path.join(OUTPUT_DIR, 'baseline-3-items.txt'),
+    normaliseInvoiceNumber(baseline.text),
+  );
+  fs.writeFileSync(
+    path.join(OUTPUT_DIR, baselinePayloadFile),
+    `${JSON.stringify(baseline.payload, null, 2)}\n`,
+  );
+
+  const manifest = {
+    generatedAt: new Date().toISOString(),
+    node: process.version,
+    platform: process.platform,
+    outputDir: OUTPUT_DIR,
+    baseline: {
+      file: BASELINE_FILE,
+      text: 'baseline-3-items.txt',
+      payload: baselinePayloadFile,
+      normalisedInvoiceNumber: true,
+    },
+    samples: results.map((sample) => ({
+      file: sample.file,
+      kind: sample.kind,
+      note: sample.note,
+      documentType: sample.payload.documentType,
+      language: sample.payload.language ?? 'en',
+      currency: sample.payload.currency ?? '',
+      itemCount: sample.payload.items.length,
+      taxRate: sample.payload.taxRate,
+      invoiceNumber: sample.invoiceNumber,
+      pages: sample.pages,
+      bytes: sample.bytes,
+      contentDisposition: sample.contentDisposition,
+      flags: {
+        hasDueDate: Boolean(sample.payload.dueDate),
+        hasPaymentType: Boolean(sample.payload.paymentType),
+        hasNotes: Boolean(sample.payload.notes),
+        hasOptionalContacts: Boolean(
+          sample.payload.company.address ||
+          sample.payload.company.phone ||
+          sample.payload.company.email ||
+          sample.payload.client.address ||
+          sample.payload.client.phone ||
+          sample.payload.client.email,
+        ),
+      },
+    })),
+  };
+
+  fs.writeFileSync(
+    path.join(OUTPUT_DIR, 'manifest.json'),
+    `${JSON.stringify(manifest, null, 2)}\n`,
+  );
+
+  const matrixCount = results.filter((sample) => sample.kind === 'matrix').length;
+  const variantCount = results.filter((sample) => sample.kind === 'variant').length;
+  console.log(`PDF samples written to ${OUTPUT_DIR}`);
+  console.log(`  matrix:  ${matrixCount}`);
+  console.log(`  variant: ${variantCount}`);
+  console.log(`  baseline: ${path.join(OUTPUT_DIR, 'baseline-3-items.txt')}`);
+  console.log(`  manifest: ${path.join(OUTPUT_DIR, 'manifest.json')}`);
+};
+
+main().catch((error: unknown) => {
+  console.error(error);
+  process.exitCode = 1;
+});

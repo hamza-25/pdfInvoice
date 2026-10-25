@@ -33,8 +33,20 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
   const bottomLimit = doc.page.height - LAYOUT.bottomMargin;
 
   res.setHeader('Content-Type', 'application/pdf');
-  const clientName = (data.client && data.client.name) ? String(data.client.name).trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '') : '';
-  const clientCity = (data.client && data.client.city) ? String(data.client.city).trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '') : '';
+  const clientName =
+    data.client && data.client.name
+      ? String(data.client.name)
+          .trim()
+          .replace(/[^a-zA-Z0-9]+/g, '-')
+          .replace(/^-|-$/g, '')
+      : '';
+  const clientCity =
+    data.client && data.client.city
+      ? String(data.client.city)
+          .trim()
+          .replace(/[^a-zA-Z0-9]+/g, '-')
+          .replace(/^-|-$/g, '')
+      : '';
   const filenameParts = [];
   if (clientName) filenameParts.push(clientName);
   if (clientCity) filenameParts.push(clientCity);

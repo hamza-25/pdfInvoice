@@ -247,8 +247,7 @@ export const en: Dictionary = {
 
   // ---- Success flow (chunk R6) ----
   'ui.successTitle': 'Document ready',
-  'ui.successBody':
-    'Your PDF was generated. Open it in a new tab or start a new document.',
+  'ui.successBody': 'Your PDF was generated. Open it in a new tab or start a new document.',
   'ui.openPreview': 'Open preview',
   'ui.newDocument': 'New document',
   'ui.collapse': 'Collapse',
