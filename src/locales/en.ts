@@ -16,6 +16,8 @@ export interface Dictionary {
   'pdf.date.invoice': string;
   'pdf.date.quote': string;
   'pdf.date.receipt': string;
+  'pdf.dueDate': string;
+  'pdf.from': string;
   'pdf.billTo': string;
   'pdf.column.description': string;
   'pdf.column.quantity': string;
@@ -161,6 +163,8 @@ export const en: Dictionary = {
   'pdf.date.invoice': 'DATE',
   'pdf.date.quote': 'VALID UNTIL',
   'pdf.date.receipt': 'PAID ON',
+  'pdf.dueDate': 'DUE DATE',
+  'pdf.from': 'FROM',
   'pdf.billTo': 'BILL TO',
   'pdf.column.description': 'DESCRIPTION',
   'pdf.column.quantity': 'Quantity',

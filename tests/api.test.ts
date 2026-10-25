@@ -317,6 +317,24 @@ describe('POST /pdf/invoice-generate — document types (chunk 4.1)', () => {
     expect(text).toContain('February 15, 2026'); // dueDate, locale-formatted (chunk 4.6)
   });
 
+  it('prints DATE, not VALID UNTIL, for a quote without a due date (P2)', async () => {
+    const res = await postInvoice({ ...validPayload, documentType: 'QUOTE' });
+    expect(res.status).toBe(200);
+
+    const text = extractPdfText(res.body);
+    expect(text).toContain('DATE:');
+    expect(text).not.toContain('VALID UNTIL:');
+  });
+
+  it('prints DUE DATE for an invoice that has a due date (P2)', async () => {
+    const res = await postInvoice({ ...validPayload, dueDate: '2026-01-31' });
+    expect(res.status).toBe(200);
+
+    const text = extractPdfText(res.body);
+    expect(text).toContain('DUE DATE:');
+    expect(text).toContain('January 31, 2026');
+  });
+
   it('renders a RECEIPT with its own title and "PAID ON" label', async () => {
     const res = await postInvoice({ ...validPayload, documentType: 'RECEIPT' });
     expect(res.status).toBe(200);

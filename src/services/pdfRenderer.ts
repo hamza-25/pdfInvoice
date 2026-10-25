@@ -1,76 +1,217 @@
+import type { TranslationKey } from '../locales/en';
+import type { clientData, companyData } from '../interfaces';
 import { formatDate, formatMoney } from './currency';
 import { t } from './i18n';
 import type { InvoiceModel } from './invoiceModel';
-import { LAYOUT } from './pdfLayout';
+import { COLORS, FONTS, LAYOUT, PAGE, SPACE, TYPE } from './pdfLayout';
+
+const LEFT_WIDTH = 250;
+const META_WIDTH = 210;
+
+interface MetaRow {
+  label: string;
+  value: string;
+}
+
+type Party = companyData | clientData;
+type NameStyle = { font: string; size: number };
+
+/** Stack every non-empty contact field on its own line, like the live sheet. */
+const contactText = (party: Party): string =>
+  [party.address, party.city, party.phone, party.email]
+    .filter((line): line is string => Boolean(line && line.trim()))
+    .map((line) => line.trim())
+    .join('\n');
 
 /**
  * Draw the invoice onto an existing PDFKit document.
  *
- * This is a 1:1 extraction of the pre-redesign drawing code: same coordinates,
- * fonts, colours and text order. The invoice model is the only input, so the
- * next layout chunks can change presentation without touching request handling
- * or money maths.
+ * P2 replaces the header and bill-to block. The old items/totals/footer code is
+ * still below, deliberately, until P3–P5 rebuild those sections.
  */
 export const renderInvoicePdf = (doc: PDFKit.PDFDocument, model: InvoiceModel): void => {
   const { lang, style } = model;
-  const contentRight = doc.page.width - LAYOUT.margin;
-  const bottomLimit = doc.page.height - LAYOUT.bottomMargin;
+  const contentRight = doc.page.width - PAGE.margin;
+  const contentBottom = doc.page.height - PAGE.margin - PAGE.footerReserved;
+  const metaX = contentRight - META_WIDTH;
 
-  // ---- Header ----
-  doc.fontSize(20).fillColor(style.accent).text(t(style.titleKey, lang), 450, LAYOUT.margin);
+  /** The full-bleed accent rule at the top of every page. */
+  const drawPageChrome = (): void => {
+    doc.rect(0, 0, doc.page.width, 3).fill(COLORS.accent);
+  };
 
-  // Company info (top-left)
-  doc
-    .fillColor('black')
-    .fontSize(10)
-    .text(model.company.name, LAYOUT.margin, LAYOUT.margin)
-    .text(model.company.address || '', LAYOUT.margin, LAYOUT.margin + 15)
-    .text(model.company.city || '', LAYOUT.margin, LAYOUT.margin + 30);
-
-  // Document info (top-right)
-  doc
-    .text(`${t(style.idKey, lang)}:`, 400, 100)
-    .text(model.number, 470, 100)
-    .text(`${t(style.dateKey, lang)}:`, 400, 115)
-    .text(formatDate(model.primaryDate?.value ?? '', lang), 470, 115);
-
-  // Accent rule under the header
-  doc
-    .moveTo(LAYOUT.margin, 90)
-    .lineTo(contentRight, 90)
-    .lineWidth(2)
-    .strokeColor(style.accent)
-    .stroke()
-    .lineWidth(1)
-    .strokeColor('black');
-
-  // ---- Bill To box ----
-  doc
-    .rect(LAYOUT.margin, 140, 200, 20)
-    .fill('#e0e0e0')
-    .stroke()
-    .fillColor('black')
-    .text(t('pdf.billTo', lang), 55, 145);
-
-  doc
-    .fillColor('black')
-    .text(model.client.name, 55, 165)
-    .text(model.client.address || '', 55, 180)
-    .text(model.client.city || '', 55, 195)
-    .text(model.client.phone || '', 55, 210)
-    .text(model.client.email || '', 55, 225);
+  /** Draw an accent section label and return its measured height. */
+  const drawSectionLabel = (text: string, y: number): number => {
+    doc.font(TYPE.sectionLabel.font).fontSize(TYPE.sectionLabel.size);
+    const height = doc.heightOfString(text, {
+      width: LEFT_WIDTH,
+      characterSpacing: TYPE.sectionLabel.tracking,
+    });
+    doc.fillColor(COLORS.accent).text(text, PAGE.margin, y, {
+      width: LEFT_WIDTH,
+      characterSpacing: TYPE.sectionLabel.tracking,
+    });
+    return height;
+  };
 
   /**
-   * Draw the table header (rule, labels, rule) at `y` and return the y at
-   * which the first row should start. Re-drawn on every new page.
+   * Draw a party block (FROM / BILL TO): label, name, then every non-empty
+   * contact line. Returns the measured block height.
+   */
+  const drawPartyBlock = (
+    label: string,
+    name: string,
+    party: Party,
+    nameStyle: NameStyle,
+    top: number,
+  ): number => {
+    let cursor = top;
+    cursor += drawSectionLabel(label, cursor) + SPACE.xs;
+
+    doc.font(nameStyle.font).fontSize(nameStyle.size).fillColor(COLORS.ink);
+    const nameHeight = doc.heightOfString(name, { width: LEFT_WIDTH });
+    doc.text(name, PAGE.margin, cursor, { width: LEFT_WIDTH });
+    cursor += nameHeight;
+
+    const contact = contactText(party);
+    if (contact) {
+      cursor += SPACE.xs;
+      doc.font(TYPE.metaValue.font).fontSize(TYPE.metaValue.size);
+      const contactHeight = doc.heightOfString(contact, { width: LEFT_WIDTH, lineGap: 1 });
+      doc.fillColor(COLORS.inkSoft).text(contact, PAGE.margin, cursor, {
+        width: LEFT_WIDTH,
+        lineGap: 1,
+      });
+      cursor += contactHeight;
+    }
+
+    return cursor - top;
+  };
+
+  /** Primary date label: quote-without-due falls back from VALID UNTIL to DATE. */
+  const primaryDateKey = (): TranslationKey =>
+    style.kind === 'quote' && model.primaryDate?.role === 'issue'
+      ? 'pdf.date.invoice'
+      : style.dateKey;
+
+  const secondaryDateKey = (): TranslationKey =>
+    style.kind === 'invoice' && model.secondaryDate?.role === 'due'
+      ? 'pdf.dueDate'
+      : 'pdf.date.invoice';
+
+  const buildMetaRows = (): MetaRow[] => {
+    const rows: MetaRow[] = [{ label: t(style.idKey, lang), value: model.number }];
+
+    if (model.primaryDate) {
+      rows.push({
+        label: `${t(primaryDateKey(), lang)}:`,
+        value: formatDate(model.primaryDate.value, lang),
+      });
+    }
+    if (model.secondaryDate) {
+      rows.push({
+        label: `${t(secondaryDateKey(), lang)}:`,
+        value: formatDate(model.secondaryDate.value, lang),
+      });
+    }
+
+    return rows;
+  };
+
+  /** Draw label/value pairs with their baselines aligned. */
+  const drawMetaRows = (rows: MetaRow[], top: number): number => {
+    const rowHeight = TYPE.metaValue.leading + SPACE.xxs;
+    const labelOffset = (TYPE.metaValue.size - TYPE.metaLabel.size) * 0.72;
+    let cursor = top;
+
+    for (const row of rows) {
+      doc
+        .font(TYPE.metaLabel.font)
+        .fontSize(TYPE.metaLabel.size)
+        .fillColor(COLORS.inkSoft)
+        .text(row.label, metaX, cursor + labelOffset, {
+          width: META_WIDTH,
+          characterSpacing: TYPE.metaLabel.tracking,
+        });
+      doc
+        .font(TYPE.metaValue.font)
+        .fontSize(TYPE.metaValue.size)
+        .fillColor(COLORS.ink)
+        .text(row.value, metaX, cursor, { width: META_WIDTH, align: 'right' });
+      cursor += rowHeight;
+    }
+
+    return cursor - top;
+  };
+
+  /** Draw the letterhead plus right-hand meta block; return the hairline y. */
+  const drawHeader = (): number => {
+    const top = PAGE.margin;
+    const leftHeight = drawPartyBlock(
+      t('pdf.from', lang),
+      model.company.name,
+      model.company,
+      TYPE.company,
+      top,
+    );
+
+    const title = t(style.titleKey, lang);
+    doc.font(TYPE.title.font).fontSize(TYPE.title.size);
+    const titleHeight = doc.heightOfString(title, {
+      width: META_WIDTH,
+      characterSpacing: TYPE.title.tracking,
+    });
+    doc.fillColor(COLORS.ink).text(title, metaX, top, {
+      width: META_WIDTH,
+      align: 'right',
+      characterSpacing: TYPE.title.tracking,
+    });
+
+    const metaTop = top + titleHeight + SPACE.sm;
+    const rightHeight = metaTop - top + drawMetaRows(buildMetaRows(), metaTop);
+    const headerBottom = top + Math.max(leftHeight, rightHeight) + SPACE.lg;
+
+    doc
+      .moveTo(PAGE.margin, headerBottom)
+      .lineTo(contentRight, headerBottom)
+      .lineWidth(1)
+      .strokeColor(COLORS.rule)
+      .stroke()
+      .strokeColor(COLORS.ink);
+
+    return headerBottom;
+  };
+
+  drawPageChrome();
+  const headerBottom = drawHeader();
+
+  // ---- Bill To ----
+  const billToTop = headerBottom + SPACE.xl;
+  const billToHeight = drawPartyBlock(
+    t('pdf.billTo', lang),
+    model.client.name,
+    model.client,
+    TYPE.client,
+    billToTop,
+  );
+
+  /**
+   * Draw the legacy table header (rule, labels, rule) at `y` and return the y
+   * at which the first row should start. P3 replaces this with five columns.
    */
   const drawTableHeader = (y: number): number => {
-    doc.moveTo(LAYOUT.margin, y).lineTo(contentRight, y).stroke();
+    doc
+      .moveTo(LAYOUT.margin, y)
+      .lineTo(contentRight, y)
+      .lineWidth(1)
+      .strokeColor(COLORS.ink)
+      .stroke();
 
     const labelY = y + 5;
     doc
-      .font('Helvetica')
+      .font(FONTS.sans)
       .fontSize(10)
+      .fillColor(COLORS.ink)
       .text(t('pdf.column.description', lang), LAYOUT.columns.description.x, labelY)
       .text(t('pdf.column.quantity', lang), LAYOUT.columns.quantity.x, labelY)
       .text(t('pdf.column.amount', lang), LAYOUT.columns.amount.x, labelY);
@@ -82,13 +223,13 @@ export const renderInvoicePdf = (doc: PDFKit.PDFDocument, model: InvoiceModel): 
 
   /**
    * Compact header for pages after the first: company name on the left,
-   * document type + number on the right.
+   * document type + number on the right. P3 adds the hairline.
    */
   const drawContinuationHeader = (): void => {
     doc
-      .font('Helvetica')
+      .font(FONTS.sans)
       .fontSize(9)
-      .fillColor('black')
+      .fillColor(COLORS.ink)
       .text(model.company.name, LAYOUT.margin, LAYOUT.margin, { width: 250, ellipsis: true })
       .text(`${t(style.titleKey, lang)} ${model.number}`, contentRight - 200, LAYOUT.margin, {
         width: 200,
@@ -96,25 +237,27 @@ export const renderInvoicePdf = (doc: PDFKit.PDFDocument, model: InvoiceModel): 
       });
   };
 
-  /** Start a new page with the continuation header + table header. */
+  /** Start a new page with the page rule + continuation header + table header. */
   const newPageWithHeader = (): number => {
     doc.addPage();
+    drawPageChrome();
     drawContinuationHeader();
-    return drawTableHeader(LAYOUT.margin + LAYOUT.continuation.height);
+    return drawTableHeader(PAGE.margin + LAYOUT.continuation.height);
   };
 
   /** Add a page when `needed` points would overflow, and return the new y. */
   const ensureSpace = (y: number, needed: number): number => {
-    if (y + needed > bottomLimit) {
+    if (y + needed > contentBottom) {
       doc.addPage();
+      drawPageChrome();
       drawContinuationHeader();
-      return LAYOUT.margin + LAYOUT.continuation.height;
+      return PAGE.margin + LAYOUT.continuation.height;
     }
     return y;
   };
 
-  // ---- Items table ----
-  let cursorY = drawTableHeader(270);
+  // ---- Items table (legacy; P3 replaces this) ----
+  let cursorY = drawTableHeader(billToTop + billToHeight + SPACE.xl);
 
   model.lines.forEach((line) => {
     const description = line.description;
@@ -123,13 +266,14 @@ export const renderInvoicePdf = (doc: PDFKit.PDFDocument, model: InvoiceModel): 
     });
     const rowHeight = Math.max(LAYOUT.row.minHeight, descriptionHeight + LAYOUT.row.paddingY);
 
-    if (cursorY + rowHeight > bottomLimit) {
+    if (cursorY + rowHeight > contentBottom) {
       cursorY = newPageWithHeader();
     }
 
     doc
-      .font('Helvetica')
+      .font(FONTS.sans)
       .fontSize(10)
+      .fillColor(COLORS.ink)
       .text(description, LAYOUT.columns.description.x, cursorY, {
         width: LAYOUT.columns.description.width,
       })
@@ -139,29 +283,31 @@ export const renderInvoicePdf = (doc: PDFKit.PDFDocument, model: InvoiceModel): 
     cursorY += rowHeight;
   });
 
-  // ---- Totals ----
-  // Money is rounded to cents so the PDF never shows float artifacts (e.g. 3149.9685).
+  // ---- Totals (legacy; P4 replaces this) ----
   cursorY = ensureSpace(cursorY, LAYOUT.totals.height);
 
   doc
+    .fillColor(COLORS.ink)
     .text(`${t('pdf.tax', lang)} (${model.taxRate}%)`, LAYOUT.columns.description.x, cursorY)
     .text(formatMoney(model.taxValue, model.currency), LAYOUT.columns.amount.x, cursorY);
 
   cursorY += LAYOUT.totals.lineGap;
-  doc.moveTo(LAYOUT.margin, cursorY).lineTo(contentRight, cursorY).stroke();
+  doc.moveTo(LAYOUT.margin, cursorY).lineTo(contentRight, cursorY).strokeColor(COLORS.ink).stroke();
 
   cursorY += LAYOUT.totals.lineGap;
   doc
-    .font('Helvetica-Bold')
+    .font(FONTS.sansBold)
+    .fillColor(COLORS.ink)
     .text(t('pdf.total', lang), 400, cursorY)
     .text(formatMoney(model.grandTotal, model.currency), LAYOUT.columns.amount.x, cursorY);
 
-  // ---- Footer ----
+  // ---- Footer (legacy; P5 replaces this) ----
   cursorY += LAYOUT.totals.footerGap;
   cursorY = ensureSpace(cursorY, LAYOUT.totals.footerHeight);
   doc
-    .font('Helvetica')
+    .font(FONTS.sans)
     .fontSize(10)
+    .fillColor(COLORS.ink)
     .text(t('pdf.thanks', lang), LAYOUT.margin, cursorY)
     .fontSize(8)
     .text(t('pdf.contactNote', lang), LAYOUT.margin, cursorY + 40)
@@ -182,9 +328,9 @@ export const renderInvoicePdf = (doc: PDFKit.PDFDocument, model: InvoiceModel): 
     const savedBottomMargin = doc.page.margins.bottom;
     doc.page.margins.bottom = 0;
     doc
-      .font('Helvetica')
+      .font(FONTS.sans)
       .fontSize(8)
-      .fillColor('black')
+      .fillColor(COLORS.ink)
       .text(
         t('pdf.pageOf', lang, { current: i - range.start + 1, total: range.count }),
         LAYOUT.margin,

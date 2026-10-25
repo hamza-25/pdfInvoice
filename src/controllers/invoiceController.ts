@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import PDFDocument from 'pdfkit';
 import { invoiceData } from '../interfaces';
 import { validationResult } from 'express-validator';
-import { LAYOUT } from '../services/pdfLayout';
+import { PAGE } from '../services/pdfLayout';
 import { buildInvoiceModel } from '../services/invoiceModel';
 import { renderInvoicePdf } from '../services/pdfRenderer';
 import { generateInvoiceNumber } from '../services/invoiceNumber';
@@ -25,7 +25,7 @@ export const invoiceGenerate = catchAsync(async (req: Request, res: Response): P
   const model = buildInvoiceModel(data);
   const startedAt = process.hrtime.bigint();
 
-  const doc = new PDFDocument({ size: 'A4', margin: LAYOUT.margin, bufferPages: true });
+  const doc = new PDFDocument({ size: 'A4', margin: PAGE.margin, bufferPages: true });
 
   res.setHeader('Content-Type', 'application/pdf');
   const clientName =

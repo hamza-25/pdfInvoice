@@ -1,16 +1,77 @@
+import type { TranslationKey } from '../locales/en';
+
+/** Page grid, in PostScript points (A4). */
+export const PAGE = {
+  width: 595.28,
+  height: 841.89,
+  /** Left/right/top margin. */
+  margin: 56,
+  /** Space reserved below the content for the page-number footer. */
+  footerReserved: 40,
+  /** Usable width between the left and right margins. */
+  contentWidth: 483.28,
+} as const;
+
+/** Paper-and-ink palette, mirrored from `src/styles/app.css`. */
+export const COLORS = {
+  paper: '#FFFFFF',
+  ink: '#1A1F26',
+  inkSoft: '#5C6673',
+  rule: '#E5E3DC',
+  accent: '#9E2B25',
+} as const;
+
+/** Standard PDFKit faces. P9 can swap these for embedded TTFs. */
+export const FONTS = {
+  display: 'Times-Bold',
+  sans: 'Helvetica',
+  sansBold: 'Helvetica-Bold',
+} as const;
+
+/** Type scale for the document. Sizes are points; leading is line height. */
+export const TYPE = {
+  title: { font: FONTS.display, size: 30, leading: 32, tracking: 0.6 },
+  company: { font: FONTS.sansBold, size: 12, leading: 15 },
+  client: { font: FONTS.sansBold, size: 10.5, leading: 14 },
+  sectionLabel: { font: FONTS.sansBold, size: 7.5, leading: 9, tracking: 1.2 },
+  metaLabel: { font: FONTS.sansBold, size: 7.5, leading: 9, tracking: 0.9 },
+  metaValue: { font: FONTS.sans, size: 9, leading: 11 },
+  tableHeader: { font: FONTS.sansBold, size: 7.5, leading: 9, tracking: 0.8 },
+  tableBody: { font: FONTS.sans, size: 9, leading: 12 },
+  grandTotal: { font: FONTS.sansBold, size: 13, leading: 15 },
+  footer: { font: FONTS.sans, size: 7.5, leading: 10 },
+} as const;
+
+/** Vertical rhythm scale. */
+export const SPACE = {
+  xxs: 2,
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  xxl: 32,
+} as const;
+
+/** Five-column items table (P3). x is absolute; amounts are right-aligned. */
+export const COLUMNS = {
+  index: { x: 56, width: 20, align: 'left' },
+  description: { x: 84, width: 220, align: 'left' },
+  quantity: { x: 312, width: 36, align: 'right' },
+  unitPrice: { x: 360, width: 76, align: 'right' },
+  amount: { x: 448, width: 91.28, align: 'right' },
+} as const;
+
 /**
- * Shared layout constants for the invoice PDF.
- *
- * Keeping these in one place means the drawing code (controller) and any future
- * layout tweaks stay in sync, and the page-break maths has a single source of
- * truth.
+ * Legacy layout constants for the pre-redesign items table, totals and footer.
+ * P3 and P4 replace these sections with the tokens above.
  */
 export const LAYOUT = {
   /** Page margin on every side. */
-  margin: 50,
+  margin: PAGE.margin,
 
   /** Space reserved at the bottom of every page before a page break is forced. */
-  bottomMargin: 55,
+  bottomMargin: PAGE.margin + PAGE.footerReserved,
 
   columns: {
     /** Description column — descriptions wrap to this width. */
@@ -52,8 +113,6 @@ export const LAYOUT = {
   },
 } as const;
 
-import type { TranslationKey } from '../locales/en';
-
 /** The three date/presentation families the PDF knows about. */
 export type DocumentKind = 'invoice' | 'quote' | 'receipt';
 
@@ -63,54 +122,42 @@ export interface DocumentTypeStyle {
   kind: DocumentKind;
   /** Translation key of the big title in the top-right corner. */
   titleKey: TranslationKey;
-  /** Accent color for the title and the underline rule. */
-  accent: string;
   /** Translation key of the label in front of the document number. */
   idKey: TranslationKey;
-  /** Translation key of the label in front of the primary date. */
+  /** Translation key of the primary date label. */
   dateKey: TranslationKey;
-  /** Payload field holding the primary date value (kept for compatibility). */
-  dateField: 'issueDate' | 'dueDate';
 }
 
 /**
  * Presentation per document type. Keys are the exact `documentType` values
  * the form sends; anything unknown falls back to the invoice style.
  * Text is stored as translation keys — `t(key, language)` resolves it at
- * render time (chunk 5.2).
+ * render time.
  */
 export const DOCUMENT_TYPES: Record<string, DocumentTypeStyle> = {
   'SERVICE INVOICE': {
     kind: 'invoice',
     titleKey: 'pdf.invoice.title',
-    accent: '#2563eb',
     idKey: 'pdf.invoice.idLabel',
     dateKey: 'pdf.date.invoice',
-    dateField: 'issueDate',
   },
   'PRODUCT INVOICE': {
     kind: 'invoice',
     titleKey: 'pdf.invoice.title',
-    accent: '#2563eb',
     idKey: 'pdf.invoice.idLabel',
     dateKey: 'pdf.date.invoice',
-    dateField: 'issueDate',
   },
   QUOTE: {
     kind: 'quote',
     titleKey: 'pdf.quote.title',
-    accent: '#d97706',
     idKey: 'pdf.quote.idLabel',
     dateKey: 'pdf.date.quote',
-    dateField: 'dueDate',
   },
   RECEIPT: {
     kind: 'receipt',
     titleKey: 'pdf.receipt.title',
-    accent: '#059669',
     idKey: 'pdf.receipt.idLabel',
     dateKey: 'pdf.date.receipt',
-    dateField: 'issueDate',
   },
 };
 

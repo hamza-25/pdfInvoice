@@ -21,6 +21,8 @@ export const fr: Dictionary = {
   'pdf.date.invoice': 'DATE',
   'pdf.date.quote': "VALIDE JUSQU'AU",
   'pdf.date.receipt': 'REÇU LE',
+  'pdf.dueDate': "DATE D'ÉCHÉANCE",
+  'pdf.from': 'ÉMETTEUR',
   'pdf.billTo': 'FACTURER À',
   'pdf.column.description': 'DESCRIPTION',
   'pdf.column.quantity': 'Quantité',
