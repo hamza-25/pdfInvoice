@@ -29,6 +29,8 @@ describe('t() (chunk 5.1)', () => {
     expect(t('pdf.column.quantity', 'en')).toBe('QTY');
     expect(t('pdf.column.unitPrice', 'fr')).toBe('PRIX UNITAIRE');
     expect(t('pdf.column.unitPrice', 'en')).toBe('UNIT PRICE');
+    expect(t('pdf.subtotal', 'fr')).toBe('SOUS-TOTAL');
+    expect(t('pdf.subtotal', 'en')).toBe('SUBTOTAL');
   });
 
   it('replaces {placeholder} params (page numbers)', () => {

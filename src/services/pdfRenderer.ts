@@ -3,7 +3,7 @@ import type { clientData, companyData } from '../interfaces';
 import { formatDate, formatMoney } from './currency';
 import { t } from './i18n';
 import type { InvoiceLine, InvoiceModel } from './invoiceModel';
-import { COLORS, COLUMNS, FONTS, LAYOUT, PAGE, SPACE, TYPE } from './pdfLayout';
+import { COLORS, COLUMNS, FONTS, LAYOUT, PAGE, SPACE, TOTALS, TYPE } from './pdfLayout';
 
 const LEFT_WIDTH = 250;
 const META_WIDTH = 210;
@@ -12,6 +12,10 @@ const TABLE_HEADER_PADDING = 8;
 const ROW_PADDING = 7;
 const CONTINUATION_HEIGHT = 38;
 const CONTINUATION_RULE_OFFSET = 20;
+/** Right column of the totals ledger (label sits left of it). */
+const TOTALS_VALUE_WIDTH = 110;
+/** Breathing room between a ledger label and its value column. */
+const TOTALS_LABEL_GAP = 8;
 
 interface MetaRow {
   label: string;
@@ -31,8 +35,9 @@ const contactText = (party: Party): string =>
 /**
  * Draw the invoice onto an existing PDFKit document.
  *
- * P2 rebuilt the header and bill-to block; P3 now draws measured five-column
- * item rows. Totals and footer remain legacy until P4–P5.
+ * P2 rebuilt the header and bill-to block; P3 draws measured five-column item
+ * rows; P4 adds the right-aligned totals ledger. The footer remains legacy
+ * until P5.
  */
 export const renderInvoicePdf = (doc: PDFKit.PDFDocument, model: InvoiceModel): void => {
   const { lang, style } = model;
@@ -346,6 +351,52 @@ export const renderInvoicePdf = (doc: PDFKit.PDFDocument, model: InvoiceModel): 
     return y;
   };
 
+  /**
+   * Right-aligned totals ledger: subtotal, tax, an ink rule, and the accent
+   * grand total. Callers reserve `TOTALS.height` first so the block never
+   * splits across pages.
+   */
+  const drawTotals = (top: number): number => {
+    const x = contentRight - TOTALS.width;
+    const valueX = contentRight - TOTALS_VALUE_WIDTH;
+    const labelWidth = TOTALS.width - TOTALS_VALUE_WIDTH - TOTALS_LABEL_GAP;
+    let y = top + TOTALS.gap;
+
+    const moneyRow = (label: string, value: string): void => {
+      doc
+        .font(TYPE.metaValue.font)
+        .fontSize(TYPE.metaValue.size)
+        .fillColor(COLORS.inkSoft)
+        .text(label, x, y, { width: labelWidth });
+      doc
+        .fillColor(COLORS.ink)
+        .text(value, valueX, y, { width: TOTALS_VALUE_WIDTH, align: 'right' });
+      y += TOTALS.rowHeight;
+    };
+
+    moneyRow(t('pdf.subtotal', lang), formatMoney(model.subtotal, model.currency));
+    moneyRow(
+      `${t('pdf.tax', lang)} (${model.taxRate}%)`,
+      formatMoney(model.taxValue, model.currency),
+    );
+
+    y += TOTALS.ruleGap;
+    doc.moveTo(x, y).lineTo(contentRight, y).lineWidth(1).strokeColor(COLORS.ink).stroke();
+    y += TOTALS.totalGap;
+
+    doc
+      .font(TYPE.grandTotal.font)
+      .fontSize(TYPE.grandTotal.size)
+      .fillColor(COLORS.accent)
+      .text(t('pdf.total', lang), x, y, { width: labelWidth });
+    doc.fillColor(COLORS.accent).text(formatMoney(model.grandTotal, model.currency), valueX, y, {
+      width: TOTALS_VALUE_WIDTH,
+      align: 'right',
+    });
+
+    return y + TOTALS.totalHeight;
+  };
+
   // ---- Items table ----
   let tableBottom = drawTableHeader(billToTop + billToHeight + SPACE.xl);
 
@@ -357,23 +408,9 @@ export const renderInvoicePdf = (doc: PDFKit.PDFDocument, model: InvoiceModel): 
     tableBottom = drawTableRow(line, tableBottom, rowHeight);
   }
 
-  // ---- Totals (legacy; P4 replaces this) ----
-  let cursorY = ensureSpace(tableBottom, LAYOUT.totals.height);
-
-  doc
-    .fillColor(COLORS.ink)
-    .text(`${t('pdf.tax', lang)} (${model.taxRate}%)`, LAYOUT.columns.description.x, cursorY)
-    .text(formatMoney(model.taxValue, model.currency), LAYOUT.columns.amount.x, cursorY);
-
-  cursorY += LAYOUT.totals.lineGap;
-  doc.moveTo(LAYOUT.margin, cursorY).lineTo(contentRight, cursorY).strokeColor(COLORS.ink).stroke();
-
-  cursorY += LAYOUT.totals.lineGap;
-  doc
-    .font(FONTS.sansBold)
-    .fillColor(COLORS.ink)
-    .text(t('pdf.total', lang), 400, cursorY)
-    .text(formatMoney(model.grandTotal, model.currency), LAYOUT.columns.amount.x, cursorY);
+  // ---- Totals ledger (P4) ----
+  const ledgerTop = ensureSpace(tableBottom, TOTALS.height);
+  let cursorY = drawTotals(ledgerTop);
 
   // ---- Footer (legacy; P5 replaces this) ----
   cursorY += LAYOUT.totals.footerGap;

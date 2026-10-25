@@ -24,6 +24,7 @@ export interface Dictionary {
   'pdf.column.unitPrice': string;
   'pdf.column.amount': string;
   'pdf.tax': string; // rendered as "<tax> (<rate>%)"
+  'pdf.subtotal': string;
   'pdf.total': string;
   'pdf.thanks': string;
   'pdf.contactNote': string;
@@ -172,6 +173,7 @@ export const en: Dictionary = {
   'pdf.column.unitPrice': 'UNIT PRICE',
   'pdf.column.amount': 'AMOUNT',
   'pdf.tax': 'Tax',
+  'pdf.subtotal': 'SUBTOTAL',
   'pdf.total': 'TOTAL',
   'pdf.thanks': 'Thank you for your business!',
   'pdf.contactNote': 'If you have any questions about this invoice, please contact Us',

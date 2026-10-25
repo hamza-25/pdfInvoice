@@ -29,6 +29,7 @@ export const fr: Dictionary = {
   'pdf.column.unitPrice': 'PRIX UNITAIRE',
   'pdf.column.amount': 'MONTANT',
   'pdf.tax': 'Taxe',
+  'pdf.subtotal': 'SOUS-TOTAL',
   'pdf.total': 'TOTAL',
   'pdf.thanks': 'Merci pour votre affaire !',
   'pdf.contactNote': 'Si vous avez des questions concernant cette facture, veuillez nous contacter',

@@ -62,25 +62,38 @@ export const COLUMNS = {
   amount: { x: 448, width: 91.28, align: 'right' },
 } as const;
 
+/** Height of the subtotal and tax rows. */
+const TOTALS_ROW_HEIGHT = 18;
+/** Height of the grand-total row. */
+const TOTALS_TOTAL_HEIGHT = 22;
+
 /**
- * Legacy layout constants still used by the totals/footer until P4–P5. The
- * items table now uses `COLUMNS` and measured rows.
+ * Right-aligned totals ledger (P4): subtotal, tax, rule, grand total.
+ * `height` is reserved before drawing so the ledger never splits a page.
+ */
+export const TOTALS = {
+  /** Block width; right-aligned to the content edge. */
+  width: 210,
+  /** Gap between the last table row and the first ledger row. */
+  gap: SPACE.lg,
+  rowHeight: TOTALS_ROW_HEIGHT,
+  /** Gap between the tax row and the rule above TOTAL. */
+  ruleGap: SPACE.sm,
+  /** Gap between the rule and the grand-total row. */
+  totalGap: SPACE.sm,
+  totalHeight: TOTALS_TOTAL_HEIGHT,
+  /** Total height reserved by `ensureSpace` before drawing. */
+  height: SPACE.lg + TOTALS_ROW_HEIGHT * 2 + SPACE.sm * 2 + TOTALS_TOTAL_HEIGHT,
+} as const;
+
+/**
+ * Legacy footer constants still used until P5 replaces the closing block.
  */
 export const LAYOUT = {
   /** Page margin on every side. */
   margin: PAGE.margin,
 
-  columns: {
-    /** Legacy totals labels/values; P4 replaces this block. */
-    description: { x: 55, width: 280 },
-    amount: { x: 450, width: 100 },
-  },
-
   totals: {
-    /** Vertical gap between the totals lines. */
-    lineGap: 15,
-    /** Space reserved for the tax / rule / total block (page-break check). */
-    height: 70,
     /** Gap between the total line and the footer. */
     footerGap: 20,
     /** Space reserved for the footer block (page-break check). */

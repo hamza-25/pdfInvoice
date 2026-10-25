@@ -299,6 +299,42 @@ describe('POST /pdf/invoice-generate — items table (P3)', () => {
   });
 });
 
+describe('POST /pdf/invoice-generate — totals ledger (P4)', () => {
+  const ledgerPayload = {
+    ...validPayload,
+    items: [
+      { description: 'Widget', quantity: 2, price: 10 },
+      { description: 'Gadget', quantity: 1, price: 5 },
+    ],
+  };
+
+  it('prints subtotal, tax and total as one ledger', async () => {
+    const res = await postInvoice(ledgerPayload);
+    expect(res.status).toBe(200);
+
+    const text = extractPdfText(res.body);
+    expect(text).toContain('SUBTOTAL');
+    expect(text).toContain('25.00 $'); // 2 x 10 + 1 x 5
+    expect(text).toContain('Tax (10%)');
+    expect(text).toContain('2.50 $');
+    expect(text).toContain('TOTAL');
+    expect(text).toContain('27.50 $');
+    // The new subtotal row precedes the accent grand total.
+    expect(text.indexOf('SUBTOTAL')).toBeLessThan(text.lastIndexOf('TOTAL'));
+  });
+
+  it('localises the ledger labels in French', async () => {
+    const res = await postInvoice({ ...ledgerPayload, language: 'fr' });
+    expect(res.status).toBe(200);
+
+    const text = extractPdfText(res.body);
+    expect(text).toContain('SOUS-TOTAL');
+    expect(text).toContain('Taxe (10%)');
+    expect(text).toContain('TOTAL');
+    expect(text).toContain('27.50 $');
+  });
+});
+
 describe('POST /pdf/invoice-generate — server-side totals (chunk 1.4)', () => {
   it('ignores client-supplied subtotal/total and uses the computed values', async () => {
     const res = await postInvoice({ ...validPayload, subtotal: 999, total: 1 });
