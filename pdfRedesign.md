@@ -420,20 +420,35 @@ shows translated labels; no footer/content overlap.
 
 ---
 
-### Chunk P7 — Test suite, docs, config
-- [ ] `tests/api.test.ts`: update the footer assertion (no `[Acme`), add subtotal, unit price,
+### Chunk P7 — Test suite, docs, config ✅
+- [x] `tests/api.test.ts`: update the footer assertion (no `[Acme`), add subtotal, unit price,
       line amount, due date, payment, notes, and contact-line assertions
-- [ ] Keep every pre-existing assertion: validation, 15-item cap, totals, rounding, pagination,
+- [x] Keep every pre-existing assertion: validation, 15-item cap, totals, rounding, pagination,
       page numbers, document types, FR, no `undefined`, no client totals, invoice numbers
-- [ ] Add a renderer smoke test for 1-page, multi-page, FR, all four types
-- [ ] README: PDF architecture (`pdfLayout` tokens → `invoiceModel` → `pdfRenderer`), design rules,
+- [x] Add a renderer smoke test for 1-page, multi-page, FR, all four types
+- [x] README: PDF architecture (`pdfLayout` tokens → `invoiceModel` → `pdfRenderer`), design rules,
       how to run `npm run samples:pdf`, how to add a PDF string/locale key
-- [ ] Run `npm run lint && npm run format:check && npm run build && npm test`
+- [x] Run `npm run lint && npm run format:check && npm run build && npm test`
 
 **Verify:** all four commands green from a clean checkout; sample matrix generated; every
 payload field appears in at least one sample.
 
-> Notes:
+> Implementation notes:
+> - Added `tests/pdfRenderer.test.ts`: direct `buildInvoiceModel` → `renderInvoicePdf` smoke tests
+>   for all four document types (one page), 15 long rows (multi-page), and a French invoice. This
+>   isolates the renderer from HTTP, validation and numbering.
+> - P3–P6 already added the requested API assertions: unit price/line amount (items table),
+>   subtotal/tax/total (totals ledger), due date, payment, notes, the contact-line join, and
+>   `not.toContain('[Acme')`.
+> - `scripts/pdf-samples.ts` now validates payload-field coverage before rendering and records
+>   `coverage` (fields, document types, languages, currencies) in `manifest.json`. The zero-tax
+>   receipt variant uses EUR, so the matrix covers USD, MAD, JPY and EUR without changing the
+>   30-sample count.
+> - README documents the `pdfLayout` tokens → `invoiceModel` → `pdfRenderer` pipeline, design
+>   rules, the sample command/matrix, and the locale-key workflow.
+> - Verification: `npm run lint`, `npm run format:check`, `npm run build`, `npm test` green;
+>   186/186 tests; 30 samples regenerated (22 one-page, 8 three-page); coverage check passes with
+>   all 21 form fields and currencies EUR/JPY/MAD/USD.
 
 ---
 
