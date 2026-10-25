@@ -37,7 +37,13 @@
       var data = localStorage.getItem(COMPANY_STORAGE_KEY);
       if (!data) return;
       var parsed = JSON.parse(data);
-      var fields = ['company-name', 'company-address', 'company-city', 'company-phone', 'company-email'];
+      var fields = [
+        'company-name',
+        'company-address',
+        'company-city',
+        'company-phone',
+        'company-email',
+      ];
       fields.forEach(function (id) {
         var el = document.getElementById(id);
         if (el && parsed[id] != null) {
@@ -51,7 +57,13 @@
   var saveCompanyInfo = function () {
     try {
       var data = {};
-      var fields = ['company-name', 'company-address', 'company-city', 'company-phone', 'company-email'];
+      var fields = [
+        'company-name',
+        'company-address',
+        'company-city',
+        'company-phone',
+        'company-email',
+      ];
       fields.forEach(function (id) {
         var el = document.getElementById(id);
         if (el) data[id] = el.value;
@@ -291,7 +303,11 @@
     if (e.target.matches('.quantity, .price, #tax-rate')) {
       updateTotals();
     }
-    if (e.target.matches('#company-name, #company-address, #company-city, #company-phone, #company-email')) {
+    if (
+      e.target.matches(
+        '#company-name, #company-address, #company-city, #company-phone, #company-email',
+      )
+    ) {
       saveCompanyInfo();
     }
   });
@@ -875,14 +891,28 @@
   };
 
   var buildPdfFilename = function () {
-    var name = document.getElementById('client-name') ? document.getElementById('client-name').value : '';
-    var city = document.getElementById('client-city') ? document.getElementById('client-city').value : '';
+    var name = document.getElementById('client-name')
+      ? document.getElementById('client-name').value
+      : '';
+    var city = document.getElementById('client-city')
+      ? document.getElementById('client-city').value
+      : '';
     var parts = [];
     if (name && String(name).trim()) {
-      parts.push(String(name).trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, ''));
+      parts.push(
+        String(name)
+          .trim()
+          .replace(/[^a-zA-Z0-9]+/g, '-')
+          .replace(/^-|-$/g, ''),
+      );
     }
     if (city && String(city).trim()) {
-      parts.push(String(city).trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, ''));
+      parts.push(
+        String(city)
+          .trim()
+          .replace(/[^a-zA-Z0-9]+/g, '-')
+          .replace(/^-|-$/g, ''),
+      );
     }
     parts.push('invoice');
     return parts.filter(Boolean).join('-') + '.pdf';
@@ -943,14 +973,11 @@
     if (successPanel) successPanel.classList.add('hidden');
   };
 
-  /** Explicit reset — the only path that wipes the form (chunk R6). */
+  /** Explicit reset — the only path that wipes the form (chunk R6).
+   *  Company fields are the saved "From" profile (localStorage), so they are
+   *  deliberately left untouched — exactly like a page reload. */
   var newDocument = function () {
     [
-      'company-name',
-      'company-address',
-      'company-city',
-      'company-phone',
-      'company-email',
       'client-name',
       'client-address',
       'client-city',
@@ -1067,7 +1094,9 @@
   if (toggleFromBtn && fromSectionContent) {
     toggleFromBtn.addEventListener('click', function () {
       var isHidden = fromSectionContent.classList.toggle('hidden');
-      toggleFromBtn.textContent = isHidden ? (tUi('ui.expand') || 'Expand') : (tUi('ui.collapse') || 'Collapse');
+      toggleFromBtn.textContent = isHidden
+        ? tUi('ui.expand') || 'Expand'
+        : tUi('ui.collapse') || 'Collapse';
     });
   }
 

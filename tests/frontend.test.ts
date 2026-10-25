@@ -1144,7 +1144,21 @@ describe('success panel (chunk R6)', () => {
     const { window, document, anchorClicks } = await boot();
     const expectedDate = (document.getElementById('invoice-date') as HTMLInputElement).value;
 
-    (document.getElementById('company-name') as HTMLInputElement).value = 'Acme';
+    // The "From" section is a persisted profile: type into each field so the
+    // input listener saves it, then make sure New document does not wipe it.
+    const company = {
+      'company-name': 'Acme',
+      'company-address': '1 Main St',
+      'company-city': 'NY',
+      'company-phone': '123',
+      'company-email': 'a@b.com',
+    };
+    Object.entries(company).forEach(([id, value]) => {
+      const field = document.getElementById(id) as HTMLInputElement;
+      field.value = value;
+      field.dispatchEvent(new window.Event('input', { bubbles: true }));
+    });
+
     submit(window, document);
     await flush();
 
@@ -1157,7 +1171,10 @@ describe('success panel (chunk R6)', () => {
     );
 
     expect(panel.classList.contains('hidden')).toBe(true);
-    expect((document.getElementById('company-name') as HTMLInputElement).value).toBe('');
+    Object.entries(company).forEach(([id, value]) => {
+      expect((document.getElementById(id) as HTMLInputElement).value).toBe(value);
+    });
+    expect((document.getElementById('client-name') as HTMLInputElement).value).toBe('');
     expect((document.getElementById('invoice-date') as HTMLInputElement).value).toBe(expectedDate);
     expect((document.getElementById('due-date') as HTMLInputElement).value).toBe('');
     expect((document.getElementById('tax-rate') as HTMLInputElement).value).toBe('0');
@@ -1247,7 +1264,10 @@ describe('success panel (chunk R6)', () => {
       new window.Event('click', { bubbles: true }),
     );
 
-    expect(name.value).toBe('');
+    expect(name.value).toBe('Acme'); // saved company profile survives the reset
+    expect(JSON.parse(window.localStorage.getItem('pdfinvoice-company')!)['company-name']).toBe(
+      'Acme',
+    );
     expect(document.querySelectorAll('.item-row').length).toBe(1);
     expect((document.getElementById('invoice-type') as HTMLSelectElement).value).toBe(
       'SERVICE INVOICE',

@@ -7,8 +7,8 @@ import type { Dictionary } from './en';
  * with English: adding a key to `en.ts` breaks this file until it is added
  * here too (and a unit test asserts parity at runtime).
  *
- * All glyphs used here (é, è, ç, À, Ç, «») are WinAnsi-encodable, so
- * PDFKit's standard fonts render them without issue.
+ * All glyphs used here (é, è, ç, À, Ç, «») are covered by the bundled IBM Plex
+ * Sans/Spectral fonts; PDFKit embeds subsets in the PDF.
  */
 export const fr: Dictionary = {
   // PDF
@@ -21,14 +21,20 @@ export const fr: Dictionary = {
   'pdf.date.invoice': 'DATE',
   'pdf.date.quote': "VALIDE JUSQU'AU",
   'pdf.date.receipt': 'REÇU LE',
+  'pdf.dueDate': "DATE D'ÉCHÉANCE",
+  'pdf.from': 'ÉMETTEUR',
   'pdf.billTo': 'FACTURER À',
   'pdf.column.description': 'DESCRIPTION',
-  'pdf.column.quantity': 'Quantité',
+  'pdf.column.quantity': 'QTÉ',
+  'pdf.column.unitPrice': 'PRIX UNITAIRE',
   'pdf.column.amount': 'MONTANT',
   'pdf.tax': 'Taxe',
+  'pdf.subtotal': 'SOUS-TOTAL',
   'pdf.total': 'TOTAL',
   'pdf.thanks': 'Merci pour votre affaire !',
   'pdf.contactNote': 'Si vous avez des questions concernant cette facture, veuillez nous contacter',
+  'pdf.payment': 'MODE DE PAIEMENT',
+  'pdf.notes': 'NOTES',
   'pdf.pageOf': 'Page {current} sur {total}',
 
   // UI

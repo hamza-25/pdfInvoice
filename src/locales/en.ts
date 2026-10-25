@@ -16,14 +16,20 @@ export interface Dictionary {
   'pdf.date.invoice': string;
   'pdf.date.quote': string;
   'pdf.date.receipt': string;
+  'pdf.dueDate': string;
+  'pdf.from': string;
   'pdf.billTo': string;
   'pdf.column.description': string;
   'pdf.column.quantity': string;
+  'pdf.column.unitPrice': string;
   'pdf.column.amount': string;
   'pdf.tax': string; // rendered as "<tax> (<rate>%)"
+  'pdf.subtotal': string;
   'pdf.total': string;
   'pdf.thanks': string;
   'pdf.contactNote': string;
+  'pdf.payment': string;
+  'pdf.notes': string;
   'pdf.pageOf': string; // {current} / {total} placeholders
 
   // ---- Website UI (resolved client-side via /i18n.js) ----
@@ -161,14 +167,20 @@ export const en: Dictionary = {
   'pdf.date.invoice': 'DATE',
   'pdf.date.quote': 'VALID UNTIL',
   'pdf.date.receipt': 'PAID ON',
+  'pdf.dueDate': 'DUE DATE',
+  'pdf.from': 'FROM',
   'pdf.billTo': 'BILL TO',
   'pdf.column.description': 'DESCRIPTION',
-  'pdf.column.quantity': 'Quantity',
+  'pdf.column.quantity': 'QTY',
+  'pdf.column.unitPrice': 'UNIT PRICE',
   'pdf.column.amount': 'AMOUNT',
   'pdf.tax': 'Tax',
+  'pdf.subtotal': 'SUBTOTAL',
   'pdf.total': 'TOTAL',
   'pdf.thanks': 'Thank you for your business!',
   'pdf.contactNote': 'If you have any questions about this invoice, please contact Us',
+  'pdf.payment': 'PAYMENT METHOD',
+  'pdf.notes': 'NOTES',
   'pdf.pageOf': 'Page {current} of {total}',
 
   // UI
@@ -247,8 +259,7 @@ export const en: Dictionary = {
 
   // ---- Success flow (chunk R6) ----
   'ui.successTitle': 'Document ready',
-  'ui.successBody':
-    'Your PDF was generated. Open it in a new tab or start a new document.',
+  'ui.successBody': 'Your PDF was generated. Open it in a new tab or start a new document.',
   'ui.openPreview': 'Open preview',
   'ui.newDocument': 'New document',
   'ui.collapse': 'Collapse',
