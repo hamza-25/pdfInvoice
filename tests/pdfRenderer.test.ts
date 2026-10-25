@@ -102,7 +102,7 @@ describe('PDF renderer smoke test (P7)', () => {
     expect(isPdf(pdf)).toBe(true);
     expect(countPdfPages(pdf)).toBe(1);
 
-    const text = extractPdfText(pdf);
+    const text = await extractPdfText(pdf);
     expect(text).toContain(testCase.title);
     expect(text).toContain(testCase.idLabel);
     expect(text).toContain(testCase.primaryDate);
@@ -131,7 +131,7 @@ describe('PDF renderer smoke test (P7)', () => {
     const pages = countPdfPages(pdf);
     expect(pages).toBeGreaterThan(1);
 
-    const text = extractPdfText(pdf);
+    const text = await extractPdfText(pdf);
     for (let index = 1; index <= 15; index += 1) {
       expect(text).toContain(`ITEM_${String(index).padStart(2, '0')}`);
     }
@@ -152,7 +152,7 @@ describe('PDF renderer smoke test (P7)', () => {
     expect(isPdf(pdf)).toBe(true);
     expect(countPdfPages(pdf)).toBe(1);
 
-    const text = extractPdfText(pdf);
+    const text = await extractPdfText(pdf);
     expect(text).toContain('FACTURE');
     expect(text).toContain('FACTURE #');
     expect(text).toContain('ÉMETTEUR');
@@ -176,5 +176,15 @@ describe('PDF renderer smoke test (P7)', () => {
     expect(text).not.toContain('PAYMENT METHOD');
     expect(text).not.toContain('Thank you for your business');
     expect(text).not.toContain('Page 1 of');
+  });
+
+  it('embeds the bundled IBM Plex Sans and Spectral faces', async () => {
+    const pdf = await render(base());
+    const raw = pdf.toString('latin1');
+
+    expect(raw).toContain('IBMPlexSans');
+    expect(raw).toContain('Spectral-SemiBold');
+    expect(raw).not.toContain('/BaseFont /Helvetica');
+    expect(raw).not.toContain('/BaseFont /Times');
   });
 });

@@ -7,8 +7,8 @@ import type { Dictionary } from './en';
  * with English: adding a key to `en.ts` breaks this file until it is added
  * here too (and a unit test asserts parity at runtime).
  *
- * All glyphs used here (é, è, ç, À, Ç, «») are WinAnsi-encodable, so
- * PDFKit's standard fonts render them without issue.
+ * All glyphs used here (é, è, ç, À, Ç, «») are covered by the bundled IBM Plex
+ * Sans/Spectral fonts; PDFKit embeds subsets in the PDF.
  */
 export const fr: Dictionary = {
   // PDF

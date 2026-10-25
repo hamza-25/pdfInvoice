@@ -22,6 +22,7 @@ RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 COPY --from=build /app/dist ./dist
 COPY views ./views
 COPY --from=build /app/public ./public
+COPY --from=build /app/src/assets/fonts ./src/assets/fonts
 
 # Run as the unprivileged `node` user shipped with the base image.
 USER node

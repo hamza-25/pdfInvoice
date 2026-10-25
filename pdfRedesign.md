@@ -2,7 +2,7 @@
 
 **Scope:** visual + structural redesign of the server-generated PDF (PDFKit), keeping the API,
 validation, i18n and response headers unchanged.
-**Date:** 2026-10-25 · **Status:** proposed · not started
+**Date:** 2026-10-25 · **Status:** implemented — P0–P9 (P9 verified 2026-10-25)
 **Skills used:** `frontend-design`, `ui-ux-pro-max`
 
 Work top to bottom. Each **chunk** is a small, independently verifiable unit.
@@ -480,26 +480,56 @@ payload field appears in at least one sample.
 
 ---
 
-### Chunk P9 — Optional: embed the app’s real fonts (gated)
-**Do not start without explicit approval.** The current text-extraction helper cannot read
-embedded subsets (verified); this chunk includes the test-infra migration.
+### Chunk P9 — Optional: embed the app’s real fonts (gated) ✅
+**Completed 2026-10-25 after explicit approval.** The old extractor could not read embedded
+subsets; this chunk includes the test-infra migration.
 
-- [ ] Add IBM Plex Sans Regular/Medium/SemiBold + Spectral SemiBold TTFs under
+- [x] Add IBM Plex Sans Regular/Medium/SemiBold + Spectral SemiBold TTFs under
       `src/assets/fonts/` with their OFL licences (pin the source in the README)
-- [ ] `registerPdfFonts(doc)` registers them with names `Body`, `BodyMedium`, `BodySemiBold`,
+- [x] `registerPdfFonts(doc)` registers them with names `Body`, `BodyMedium`, `BodySemiBold`,
       `Display`; `FONTS` points at them; fallback to Helvetica/Times if a file is missing
-- [ ] Dockerfile: copy `src/assets/fonts` into the runtime image (the build stage already copies `src`)
-- [ ] Replace `tests/helpers/pdf.ts` with a Unicode-aware extractor
+- [x] Dockerfile: copy `src/assets/fonts` into the runtime image (the build stage already copies `src`)
+- [x] Replace `tests/helpers/pdf.ts` with a Unicode-aware extractor
       (`pdfjs-dist` devDependency preferred) and update every `extractPdfText` call site
       (make it async if required); keep `isPdf` / `countPdfPages` behaviour
-- [ ] Use `features: ['tnum', 'lnum']` for money if the font supports it
-- [ ] Budget check: generated PDF stays under ~400 KB; generation time stays under ~100 ms locally
+- [x] Use `features: ['tnum', 'lnum']` for money if the font supports it
+- [x] Budget check: generated PDF stays under ~400 KB; generation time stays under ~100 ms locally
 
 **Verify:** all text tests pass with embedded fonts; FR accents render and extract; missing-font
 fallback test passes; Docker image contains the fonts; sample review confirms exact parity with the
 preview’s Spectral/IBM Plex look.
 
 > Notes:
+> - `src/assets/fonts/` holds `IBMPlexSans-{Regular,Medium,SemiBold}.ttf`,
+>   `Spectral-SemiBold.ttf` and both OFL licence files. Sources are pinned in the README
+>   (IBM Plex Sans v1.1.0 @ `71f5589`; Spectral from `google/fonts` @ `e7db6ca`).
+> - `src/services/pdfFonts.ts` registers `Body`, `BodyMedium`, `BodySemiBold` and `Display`
+>   on every document (`registerPdfFonts`, called first in `renderInvoicePdf`). `FONTS` in
+>   `pdfLayout.ts` points at those aliases; each alias falls back per file to
+>   Helvetica/Helvetica-Bold/Times-Bold when a TTF is missing, so rendering never fails.
+> - Dockerfile runtime stage copies `src/assets/fonts` from the build stage (which already
+>   copies `src`). The image build could not be exercised here (docker socket permission
+>   denied); the two COPY layers were verified by inspection.
+> - `tests/helpers/pdf.ts` now extracts text with `pdfjs-dist@4.10.38` (devDependency), which
+>   reads embedded subset ToUnicode maps. `extractPdfText` is async; every call site (api,
+>   sanitization, pdfRenderer, pdfFonts tests and `scripts/pdf-samples.ts`) awaits it.
+>   `isPdf`/`countPdfPages` keep their signatures and behaviour. Tracked uppercase labels are
+>   re-joined through the dictionaries because PDF.js renders `characterSpacing` gaps as spaces.
+> - Fix during verification: the `new Function('return import(...)')` ts-node shim throws
+>   `ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING` inside Vitest's module VM (41 failing tests).
+>   The helper now picks Vitest's native `import()` when `process.env.VITEST` is set and keeps
+>   the shim for the CommonJS sample run, so both runners load ESM-only PDF.js.
+> - Money text uses `features: ['tnum', 'lnum']` at the four money draw sites (unit price,
+>   line amount, ledger values, grand total).
+> - Verification: `npm test` green — 13 files, 189/189 tests; lint, `format:check`, typecheck and
+>   build green. The 30-sample matrix is 22 one-page / 8 three-page, 18.7–25.2 KB per PDF
+>   (max 25,165 B); full generation plus PDF.js extraction takes 2.5 s. Embedded
+>   `IBMPlexSans`, `IBMPlexSans-SmBld` and `Spectral-SemiBold` subsets appear in every sample;
+>   FR accents (`ÉMETTEUR`, `DATE D'ÉCHÉANCE`, `SOUS-TOTAL`, `PRIX UNITAIRE`,
+>   `MODE DE PAIEMENT`) extract correctly and no sample contains `undefined`. The
+>   Helvetica/Times fallback is covered by `tests/pdfFonts.test.ts`.
+> - Remaining: human visual sign-off on the typeface change (no PDF rasterizer in this
+>   environment). Structural parity with the preview's Spectral/IBM Plex faces is confirmed.
 
 ---
 

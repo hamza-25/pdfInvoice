@@ -21,11 +21,12 @@ export const COLORS = {
   accent: '#9E2B25',
 } as const;
 
-/** Standard PDFKit faces. P9 can swap these for embedded TTFs. */
+/** Embedded PDF faces, registered by `registerPdfFonts` on every document. */
 export const FONTS = {
-  display: 'Times-Bold',
-  sans: 'Helvetica',
-  sansBold: 'Helvetica-Bold',
+  display: 'Display',
+  sans: 'Body',
+  sansMedium: 'BodyMedium',
+  sansBold: 'BodySemiBold',
 } as const;
 
 /** Type scale for the document. Sizes are points; leading is line height. */

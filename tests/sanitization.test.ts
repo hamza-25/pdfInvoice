@@ -24,7 +24,7 @@ describe('PDF-safe sanitization (chunk 3.2)', () => {
       .buffer(true);
 
     expect(res.status).toBe(200);
-    const text = extractPdfText(res.body);
+    const text = await extractPdfText(res.body);
     expect(text).toContain("O'Brien & Sons");
     expect(text).not.toContain('&#39;'); // old .escape() corruption
     expect(text).not.toContain('&amp;');
@@ -40,7 +40,7 @@ describe('PDF-safe sanitization (chunk 3.2)', () => {
       .buffer(true);
 
     expect(res.status).toBe(200);
-    expect(extractPdfText(res.body)).toContain('ABC');
+    expect(await extractPdfText(res.body)).toContain('ABC');
   });
 
   it('preserves newlines in descriptions', async () => {
@@ -53,7 +53,7 @@ describe('PDF-safe sanitization (chunk 3.2)', () => {
       .buffer(true);
 
     expect(res.status).toBe(200);
-    const text = extractPdfText(res.body);
+    const text = await extractPdfText(res.body);
     expect(text).toContain('Line one');
     expect(text).toContain('Line two');
   });

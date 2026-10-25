@@ -6,7 +6,7 @@ Fill in the form at `GET /`, and the browser POSTs the data as JSON to `POST /pd
 
 ## Requirements
 
-- Node.js 18+ (developed against Node 20/22)
+- Node.js 20+ (developed against Node 20/22; tests use PDF.js)
 - npm
 
 ## Setup
@@ -127,10 +127,12 @@ src/
   app.ts                             Express setup (security, static assets, routes)
   logger.ts                          pino logger
   styles/app.css                     Tailwind v4 entry + design tokens
+  assets/fonts/                      IBM Plex Sans + Spectral TTFs and OFL licences
   routes/invoiceRoute.ts             /pdf routes
   controllers/invoiceController.ts   PDF generation
   validations/pdfInputValidations.ts request validation rules
   services/pdfLayout.ts              PDF layout tokens & document-type metadata
+  services/pdfFonts.ts               embedded font registration + standard-font fallback
   services/invoiceModel.ts           normalised render model (lines, dates, totals)
   services/pdfRenderer.ts            PDFKit drawing (header, table, ledger, footer)
   services/i18n.ts                   server-side translation lookup
@@ -157,7 +159,7 @@ public/
 scripts/
   pdf-samples.ts                     QA PDF matrix generator
 tests/                               Vitest suite (API, renderer, frontend, security, logging)
-  helpers/pdf.ts                     PDF text/page-count helpers
+  helpers/pdf.ts                     PDF.js text extraction + page-count helpers
 ```
 
 ## PDF architecture
@@ -172,7 +174,7 @@ POST /pdf/invoice-generate
   → stream PDF to the response
 ```
 
-- **`src/services/pdfLayout.ts`** — print tokens: A4 grid, paper/ink colours, standard fonts, type
+- **`src/services/pdfLayout.ts`** — print tokens: A4 grid, paper/ink colours, font aliases, type
   scale, spacing, table columns, and totals/notes/footer dimensions. It also maps each
   `documentType` to its title, id-label and date-label translation keys. These tokens mirror the
   paper/ink tokens in `src/styles/app.css`; update both together.
@@ -197,8 +199,25 @@ POST /pdf/invoice-generate
 - The totals ledger is reserved before drawing so it never splits. Long tables repeat the table
   header and a compact continuation header.
 - The footer rule and `Page X of Y` appear on every page; thanks/contact copy only on the last page.
-- Standard PDFKit fonts only. Embedded fonts would break `tests/helpers/pdf.ts`; the migration is
-  gated behind the optional P9 chunk.
+
+### Embedded fonts
+
+`src/services/pdfFonts.ts` registers four aliases on every document: `Body` (IBM Plex Sans
+Regular), `BodyMedium` (IBM Plex Sans Medium), `BodySemiBold` (IBM Plex Sans SemiBold) and
+`Display` (Spectral SemiBold). `src/services/pdfLayout.ts` points its `FONTS` tokens at those
+aliases, so changing a face never touches layout code. PDFKit subsets the fonts, which keeps the
+30-sample matrix around 19–26 KB per document.
+
+Pinned sources:
+
+- IBM Plex Sans v1.1.0, commit `71f558992315a12ca1f06a2215d57962a1992162`, from
+  `IBM/plex`: `packages/plex-sans/fonts/complete/ttf/IBMPlexSans-{Regular,Medium,SemiBold}.ttf`.
+- Spectral SemiBold from `google/fonts`, commit
+  `e7db6ca603fd4862010383ff17ffd6cc4ffac1c0`: `ofl/spectral/Spectral-SemiBold.ttf`.
+
+Their SIL Open Font License texts live beside the files as `OFL-IBM-Plex-Sans.txt` and
+`OFL-Spectral.txt`. The Docker runtime image copies `src/assets/fonts`; if a file is missing,
+`registerPdfFonts` falls back per alias to Helvetica or Times so generation does not fail.
 
 ### Preview the PDF samples
 

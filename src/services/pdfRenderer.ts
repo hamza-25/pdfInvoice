@@ -4,6 +4,7 @@ import { formatDate, formatMoney } from './currency';
 import { t } from './i18n';
 import type { InvoiceLine, InvoiceModel } from './invoiceModel';
 import { COLORS, COLUMNS, FONTS, FOOTER, NOTES, PAGE, SPACE, TOTALS, TYPE } from './pdfLayout';
+import { registerPdfFonts } from './pdfFonts';
 
 const LEFT_WIDTH = 250;
 const META_WIDTH = 210;
@@ -18,6 +19,8 @@ const TOTALS_VALUE_WIDTH = 110;
 const TOTALS_LABEL_GAP = 8;
 /** Separator between the non-empty company, phone and email footer fields. */
 const FOOTER_SEPARATOR = ' · ';
+/** IBM Plex Sans has lining figures and tabular digit widths by default. */
+const MONEY_FEATURES: PDFKit.Mixins.OpenTypeFeatures[] = ['tnum', 'lnum'];
 
 interface MetaRow {
   label: string;
@@ -54,6 +57,8 @@ const contactText = (party: Party): string =>
  * until P5.
  */
 export const renderInvoicePdf = (doc: PDFKit.PDFDocument, model: InvoiceModel): void => {
+  registerPdfFonts(doc);
+
   const { lang, style } = model;
   const contentRight = doc.page.width - PAGE.margin;
   const contentBottom = doc.page.height - PAGE.margin - PAGE.footerReserved;
@@ -296,10 +301,12 @@ export const renderInvoicePdf = (doc: PDFKit.PDFDocument, model: InvoiceModel): 
       .text(formatMoney(line.price, model.currency), COLUMNS.unitPrice.x, textY, {
         width: COLUMNS.unitPrice.width,
         align: COLUMNS.unitPrice.align,
+        features: MONEY_FEATURES,
       })
       .text(formatMoney(line.amount, model.currency), COLUMNS.amount.x, textY, {
         width: COLUMNS.amount.width,
         align: COLUMNS.amount.align,
+        features: MONEY_FEATURES,
       });
 
     const bottom = y + rowHeight;
@@ -382,9 +389,11 @@ export const renderInvoicePdf = (doc: PDFKit.PDFDocument, model: InvoiceModel): 
         .fontSize(TYPE.metaValue.size)
         .fillColor(COLORS.inkSoft)
         .text(label, x, y, { width: labelWidth });
-      doc
-        .fillColor(COLORS.ink)
-        .text(value, valueX, y, { width: TOTALS_VALUE_WIDTH, align: 'right' });
+      doc.fillColor(COLORS.ink).text(value, valueX, y, {
+        width: TOTALS_VALUE_WIDTH,
+        align: 'right',
+        features: MONEY_FEATURES,
+      });
       y += TOTALS.rowHeight;
     };
 
@@ -406,6 +415,7 @@ export const renderInvoicePdf = (doc: PDFKit.PDFDocument, model: InvoiceModel): 
     doc.fillColor(COLORS.accent).text(formatMoney(model.grandTotal, model.currency), valueX, y, {
       width: TOTALS_VALUE_WIDTH,
       align: 'right',
+      features: MONEY_FEATURES,
     });
 
     return y + TOTALS.totalHeight;

@@ -306,7 +306,7 @@ const renderSample = async (app: Express, spec: SampleSpec): Promise<SampleResul
     pages: countPdfPages(body),
     invoiceNumber: String(res.headers['x-invoice-number'] ?? 'unknown'),
     contentDisposition: String(res.headers['content-disposition'] ?? ''),
-    text: extractPdfText(body),
+    text: await extractPdfText(body),
   };
 };
 
