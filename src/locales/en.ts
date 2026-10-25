@@ -21,6 +21,7 @@ export interface Dictionary {
   'pdf.billTo': string;
   'pdf.column.description': string;
   'pdf.column.quantity': string;
+  'pdf.column.unitPrice': string;
   'pdf.column.amount': string;
   'pdf.tax': string; // rendered as "<tax> (<rate>%)"
   'pdf.total': string;
@@ -167,7 +168,8 @@ export const en: Dictionary = {
   'pdf.from': 'FROM',
   'pdf.billTo': 'BILL TO',
   'pdf.column.description': 'DESCRIPTION',
-  'pdf.column.quantity': 'Quantity',
+  'pdf.column.quantity': 'QTY',
+  'pdf.column.unitPrice': 'UNIT PRICE',
   'pdf.column.amount': 'AMOUNT',
   'pdf.tax': 'Tax',
   'pdf.total': 'TOTAL',

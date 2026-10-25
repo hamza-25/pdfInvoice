@@ -63,30 +63,17 @@ export const COLUMNS = {
 } as const;
 
 /**
- * Legacy layout constants for the pre-redesign items table, totals and footer.
- * P3 and P4 replace these sections with the tokens above.
+ * Legacy layout constants still used by the totals/footer until P4–P5. The
+ * items table now uses `COLUMNS` and measured rows.
  */
 export const LAYOUT = {
   /** Page margin on every side. */
   margin: PAGE.margin,
 
-  /** Space reserved at the bottom of every page before a page break is forced. */
-  bottomMargin: PAGE.margin + PAGE.footerReserved,
-
   columns: {
-    /** Description column — descriptions wrap to this width. */
+    /** Legacy totals labels/values; P4 replaces this block. */
     description: { x: 55, width: 280 },
-    quantity: { x: 350, width: 80 },
     amount: { x: 450, width: 100 },
-  },
-
-  row: {
-    /** Space between the table header rule and the first row. */
-    top: 10,
-    /** Minimum height of a single row (a single line of text). */
-    minHeight: 14,
-    /** Extra vertical space added to a (wrapped) multi-line description. */
-    paddingY: 4,
   },
 
   totals: {
@@ -98,12 +85,6 @@ export const LAYOUT = {
     footerGap: 20,
     /** Space reserved for the footer block (page-break check). */
     footerHeight: 55,
-  },
-
-  /** Compact header repeated at the top of every page after the first. */
-  continuation: {
-    /** Height reserved above the table header on continuation pages. */
-    height: 25,
   },
 
   /** Page-number footer stamped on every page. */

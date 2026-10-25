@@ -25,8 +25,10 @@ describe('t() (chunk 5.1)', () => {
   it('returns the matching language string', () => {
     expect(t('pdf.receipt.title', 'fr')).toBe('REÇU');
     expect(t('pdf.receipt.title', 'en')).toBe('RECEIPT');
-    expect(t('pdf.column.quantity', 'fr')).toBe('Quantité');
-    expect(t('pdf.column.quantity', 'en')).toBe('Quantity');
+    expect(t('pdf.column.quantity', 'fr')).toBe('QTÉ');
+    expect(t('pdf.column.quantity', 'en')).toBe('QTY');
+    expect(t('pdf.column.unitPrice', 'fr')).toBe('PRIX UNITAIRE');
+    expect(t('pdf.column.unitPrice', 'en')).toBe('UNIT PRICE');
   });
 
   it('replaces {placeholder} params (page numbers)', () => {

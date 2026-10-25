@@ -276,6 +276,29 @@ describe('POST /pdf/invoice-generate — dynamic layout (chunk 1.3)', () => {
   });
 });
 
+describe('POST /pdf/invoice-generate — items table (P3)', () => {
+  it('prints numbered rows, unit prices and line amounts', async () => {
+    const res = await postInvoice({
+      ...validPayload,
+      items: [
+        { description: 'Widget', quantity: 2, price: 10 },
+        { description: 'Gadget', quantity: 1, price: 5 },
+      ],
+    });
+    expect(res.status).toBe(200);
+
+    const text = extractPdfText(res.body);
+    expect(text).toContain('QTY');
+    expect(text).toContain('UNIT PRICE');
+    expect(text).toContain('AMOUNT');
+    expect(text).toContain('01Widget');
+    expect(text).toContain('02Gadget');
+    expect(text).toContain('10.00 $'); // unit price
+    expect(text).toContain('20.00 $'); // line amount
+    expect(text).toContain('5.00 $'); // second line amount
+  });
+});
+
 describe('POST /pdf/invoice-generate — server-side totals (chunk 1.4)', () => {
   it('ignores client-supplied subtotal/total and uses the computed values', async () => {
     const res = await postInvoice({ ...validPayload, subtotal: 999, total: 1 });
@@ -491,7 +514,8 @@ describe('POST /pdf/invoice-generate — French PDF (chunk 5.2)', () => {
     expect(text).toContain('FACTURE'); // title
     expect(text).toContain('FACTURE #'); // document number label
     expect(text).toContain('FACTURER À');
-    expect(text).toContain('Quantité');
+    expect(text).toContain('QTÉ');
+    expect(text).toContain('PRIX UNITAIRE');
     expect(text).toContain('MONTANT');
     expect(text).toContain('Taxe (10%)');
     expect(text).toContain('Merci pour votre affaire !');
@@ -501,7 +525,8 @@ describe('POST /pdf/invoice-generate — French PDF (chunk 5.2)', () => {
 
     // English counterparts must not leak through
     expect(text).not.toContain('BILL TO');
-    expect(text).not.toContain('Quantity');
+    expect(text).not.toContain('QTY');
+    expect(text).not.toContain('UNIT PRICE');
     expect(text).not.toContain('Thank you for your business');
   });
 

@@ -2,11 +2,16 @@ import type { TranslationKey } from '../locales/en';
 import type { clientData, companyData } from '../interfaces';
 import { formatDate, formatMoney } from './currency';
 import { t } from './i18n';
-import type { InvoiceModel } from './invoiceModel';
-import { COLORS, FONTS, LAYOUT, PAGE, SPACE, TYPE } from './pdfLayout';
+import type { InvoiceLine, InvoiceModel } from './invoiceModel';
+import { COLORS, COLUMNS, FONTS, LAYOUT, PAGE, SPACE, TYPE } from './pdfLayout';
 
 const LEFT_WIDTH = 250;
 const META_WIDTH = 210;
+const TABLE_HEADER_HEIGHT = 24;
+const TABLE_HEADER_PADDING = 8;
+const ROW_PADDING = 7;
+const CONTINUATION_HEIGHT = 38;
+const CONTINUATION_RULE_OFFSET = 20;
 
 interface MetaRow {
   label: string;
@@ -26,8 +31,8 @@ const contactText = (party: Party): string =>
 /**
  * Draw the invoice onto an existing PDFKit document.
  *
- * P2 replaces the header and bill-to block. The old items/totals/footer code is
- * still below, deliberately, until P3–P5 rebuild those sections.
+ * P2 rebuilt the header and bill-to block; P3 now draws measured five-column
+ * item rows. Totals and footer remain legacy until P4–P5.
  */
 export const renderInvoicePdf = (doc: PDFKit.PDFDocument, model: InvoiceModel): void => {
   const { lang, style } = model;
@@ -195,46 +200,131 @@ export const renderInvoicePdf = (doc: PDFKit.PDFDocument, model: InvoiceModel): 
     billToTop,
   );
 
-  /**
-   * Draw the legacy table header (rule, labels, rule) at `y` and return the y
-   * at which the first row should start. P3 replaces this with five columns.
-   */
+  /** Five-column table header, with a hairline above and below. */
   const drawTableHeader = (y: number): number => {
+    const headerBottom = y + TABLE_HEADER_HEIGHT;
     doc
-      .moveTo(LAYOUT.margin, y)
+      .moveTo(PAGE.margin, y)
       .lineTo(contentRight, y)
       .lineWidth(1)
-      .strokeColor(COLORS.ink)
+      .strokeColor(COLORS.rule)
       .stroke();
 
-    const labelY = y + 5;
-    doc
-      .font(FONTS.sans)
-      .fontSize(10)
-      .fillColor(COLORS.ink)
-      .text(t('pdf.column.description', lang), LAYOUT.columns.description.x, labelY)
-      .text(t('pdf.column.quantity', lang), LAYOUT.columns.quantity.x, labelY)
-      .text(t('pdf.column.amount', lang), LAYOUT.columns.amount.x, labelY);
+    const labelY = y + TABLE_HEADER_PADDING;
+    doc.font(TYPE.tableHeader.font).fontSize(TYPE.tableHeader.size).fillColor(COLORS.inkSoft);
 
-    const lineY = y + 20;
-    doc.moveTo(LAYOUT.margin, lineY).lineTo(contentRight, lineY).stroke();
-    return lineY + LAYOUT.row.top;
+    const label = (
+      text: string,
+      column: { x: number; width: number; align: 'left' | 'right' },
+    ): void => {
+      doc.text(text, column.x, labelY, {
+        width: column.width,
+        align: column.align,
+        characterSpacing: TYPE.tableHeader.tracking,
+      });
+    };
+
+    label('#', COLUMNS.index);
+    label(t('pdf.column.description', lang), COLUMNS.description);
+    label(t('pdf.column.quantity', lang), COLUMNS.quantity);
+    label(t('pdf.column.unitPrice', lang), COLUMNS.unitPrice);
+    label(t('pdf.column.amount', lang), COLUMNS.amount);
+
+    doc
+      .moveTo(PAGE.margin, headerBottom)
+      .lineTo(contentRight, headerBottom)
+      .strokeColor(COLORS.rule)
+      .stroke();
+
+    return headerBottom;
+  };
+
+  /** Empty descriptions still get a visible cell rather than a blank gap. */
+  const descriptionFor = (line: InvoiceLine): string => line.description.trim() || '—';
+
+  /** Measure a row before drawing so a page break never splits it. */
+  const rowHeightFor = (line: InvoiceLine): number => {
+    doc.font(TYPE.tableBody.font).fontSize(TYPE.tableBody.size);
+    return Math.max(
+      22,
+      doc.heightOfString(descriptionFor(line), { width: COLUMNS.description.width }) +
+        ROW_PADDING * 2,
+    );
+  };
+
+  /** Draw one complete row and its bottom hairline; return the next row's y. */
+  const drawTableRow = (line: InvoiceLine, y: number, rowHeight: number): number => {
+    const textY = y + ROW_PADDING;
+    doc
+      .font(TYPE.tableBody.font)
+      .fontSize(TYPE.tableBody.size)
+      .fillColor(COLORS.inkSoft)
+      .text(String(line.index).padStart(2, '0'), COLUMNS.index.x, textY, {
+        width: COLUMNS.index.width,
+        align: COLUMNS.index.align,
+      });
+
+    doc
+      .fillColor(COLORS.ink)
+      .text(descriptionFor(line), COLUMNS.description.x, textY, {
+        width: COLUMNS.description.width,
+        align: COLUMNS.description.align,
+      })
+      .text(String(line.quantity), COLUMNS.quantity.x, textY, {
+        width: COLUMNS.quantity.width,
+        align: COLUMNS.quantity.align,
+      })
+      .text(formatMoney(line.price, model.currency), COLUMNS.unitPrice.x, textY, {
+        width: COLUMNS.unitPrice.width,
+        align: COLUMNS.unitPrice.align,
+      })
+      .text(formatMoney(line.amount, model.currency), COLUMNS.amount.x, textY, {
+        width: COLUMNS.amount.width,
+        align: COLUMNS.amount.align,
+      });
+
+    const bottom = y + rowHeight;
+    doc
+      .moveTo(PAGE.margin, bottom)
+      .lineTo(contentRight, bottom)
+      .lineWidth(1)
+      .strokeColor(COLORS.rule)
+      .stroke();
+
+    return bottom;
   };
 
   /**
    * Compact header for pages after the first: company name on the left,
-   * document type + number on the right. P3 adds the hairline.
+   * document type + number on the right, then a hairline.
    */
   const drawContinuationHeader = (): void => {
+    const top = PAGE.margin;
+    doc
+      .font(FONTS.sansBold)
+      .fontSize(10)
+      .fillColor(COLORS.ink)
+      .text(model.company.name, PAGE.margin, top, { width: LEFT_WIDTH, ellipsis: true });
+
+    doc
+      .font(FONTS.display)
+      .fontSize(12)
+      .fillColor(COLORS.ink)
+      .text(t(style.titleKey, lang), contentRight - 200, top, { width: 100, align: 'right' });
+
     doc
       .font(FONTS.sans)
       .fontSize(9)
-      .fillColor(COLORS.ink)
-      .text(model.company.name, LAYOUT.margin, LAYOUT.margin, { width: 250, ellipsis: true })
-      .text(`${t(style.titleKey, lang)} ${model.number}`, contentRight - 200, LAYOUT.margin, {
-        width: 200,
-        align: 'right',
-      });
+      .fillColor(COLORS.inkSoft)
+      .text(model.number, contentRight - 100, top + 2, { width: 100, align: 'right' });
+
+    const lineY = top + CONTINUATION_RULE_OFFSET;
+    doc
+      .moveTo(PAGE.margin, lineY)
+      .lineTo(contentRight, lineY)
+      .lineWidth(1)
+      .strokeColor(COLORS.rule)
+      .stroke();
   };
 
   /** Start a new page with the page rule + continuation header + table header. */
@@ -242,7 +332,7 @@ export const renderInvoicePdf = (doc: PDFKit.PDFDocument, model: InvoiceModel): 
     doc.addPage();
     drawPageChrome();
     drawContinuationHeader();
-    return drawTableHeader(PAGE.margin + LAYOUT.continuation.height);
+    return drawTableHeader(PAGE.margin + CONTINUATION_HEIGHT);
   };
 
   /** Add a page when `needed` points would overflow, and return the new y. */
@@ -251,40 +341,24 @@ export const renderInvoicePdf = (doc: PDFKit.PDFDocument, model: InvoiceModel): 
       doc.addPage();
       drawPageChrome();
       drawContinuationHeader();
-      return PAGE.margin + LAYOUT.continuation.height;
+      return PAGE.margin + CONTINUATION_HEIGHT;
     }
     return y;
   };
 
-  // ---- Items table (legacy; P3 replaces this) ----
-  let cursorY = drawTableHeader(billToTop + billToHeight + SPACE.xl);
+  // ---- Items table ----
+  let tableBottom = drawTableHeader(billToTop + billToHeight + SPACE.xl);
 
-  model.lines.forEach((line) => {
-    const description = line.description;
-    const descriptionHeight = doc.heightOfString(description, {
-      width: LAYOUT.columns.description.width,
-    });
-    const rowHeight = Math.max(LAYOUT.row.minHeight, descriptionHeight + LAYOUT.row.paddingY);
-
-    if (cursorY + rowHeight > contentBottom) {
-      cursorY = newPageWithHeader();
+  for (const line of model.lines) {
+    const rowHeight = rowHeightFor(line);
+    if (tableBottom + rowHeight > contentBottom) {
+      tableBottom = newPageWithHeader();
     }
-
-    doc
-      .font(FONTS.sans)
-      .fontSize(10)
-      .fillColor(COLORS.ink)
-      .text(description, LAYOUT.columns.description.x, cursorY, {
-        width: LAYOUT.columns.description.width,
-      })
-      .text(String(line.quantity), LAYOUT.columns.quantity.x, cursorY)
-      .text(formatMoney(line.price, model.currency), LAYOUT.columns.amount.x, cursorY);
-
-    cursorY += rowHeight;
-  });
+    tableBottom = drawTableRow(line, tableBottom, rowHeight);
+  }
 
   // ---- Totals (legacy; P4 replaces this) ----
-  cursorY = ensureSpace(cursorY, LAYOUT.totals.height);
+  let cursorY = ensureSpace(tableBottom, LAYOUT.totals.height);
 
   doc
     .fillColor(COLORS.ink)
