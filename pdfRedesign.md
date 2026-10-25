@@ -388,20 +388,35 @@ shows translated labels; no footer/content overlap.
 
 ---
 
-### Chunk P6 — i18n keys and copy parity
-- [ ] Add to `Dictionary` + `en` + `fr`:
-      `pdf.from`, `pdf.issueDate`, `pdf.dueDate`, `pdf.subtotal`,
-      `pdf.column.unitPrice`, `pdf.payment`, `pdf.notes`
-- [ ] Keep existing keys and their exact rendering (`INVOICE #`, `DATE`, `VALID UNTIL`,
+### Chunk P6 — i18n keys and copy parity ✅
+- [x] Add to `Dictionary` + `en` + `fr`: `pdf.from`, `pdf.dueDate`, `pdf.subtotal`,
+      `pdf.column.unitPrice`, `pdf.payment`, `pdf.notes` (all added as first use;
+      `pdf.issueDate` intentionally omitted — `pdf.date.invoice` remains `DATE`)
+- [x] Keep existing keys and their exact rendering (`INVOICE #`, `DATE`, `VALID UNTIL`,
       `PAID ON`, `Tax`, `TOTAL`, `Page {current} of {total}`)
-- [ ] FR copy review: `ÉMETTEUR`, `DATE D'ÉMISSION`, `DATE D'ÉCHÉANCE`, `SOUS-TOTAL`,
+- [x] FR copy review: `ÉMETTEUR`, `DATE`, `DATE D'ÉCHÉANCE`, `SOUS-TOTAL`,
       `PRIX UNITAIRE`, `MODE DE PAIEMENT`, `NOTES`
-- [ ] Add `tests/i18n.test.ts` assertions for the new FR labels
+- [x] Add `tests/i18n.test.ts` assertions for the new FR labels
 
 **Verify:** parity test green; EN/FR samples contain the new labels and no English leakage;
 `npm run format:check` green.
 
-> Notes:
+> Implementation notes:
+> - All P6 keys are present in `Dictionary`/EN/FR. They were introduced as their first use
+>   landed: `pdf.from`/`pdf.dueDate` in P2, `pdf.column.unitPrice` in P3, `pdf.subtotal` in P4,
+>   and `pdf.payment`/`pdf.notes` in P5. `pdf.issueDate` was intentionally not added: the
+>   existing `pdf.date.invoice` (`DATE` / `DATE`) remains the issue-date label, matching the
+>   layout's date table and the earlier decision to avoid `DATE D'ÉMISSION`.
+> - `tests/i18n.test.ts` now locks the reviewed French labels (`ÉMETTEUR`, `DATE`,
+>   `DATE D'ÉCHÉANCE`, `SOUS-TOTAL`, `PRIX UNITAIRE`, `MODE DE PAIEMENT`, `NOTES`) and the
+>   fixed contract labels (`INVOICE #`/`QUOTE #`/`RECEIPT #`, `DATE`, `VALID UNTIL`, `PAID ON`,
+>   `Tax`, `TOTAL`, page placeholders).
+> - The French PDF test now includes a due date, payment type and notes, asserts every new French
+>   label and checks that the English counterparts (`FROM`, `BILL TO`, `INVOICE #`, `DUE DATE`,
+>   `SUBTOTAL`, `PAYMENT METHOD`, `QTY`, `UNIT PRICE`, `AMOUNT`, `Page 1 of`) do not leak.
+> - Verification: 180/180 tests, lint/format/build green; 30 samples regenerated (22 one-page,
+>   8 three-page); 382 sample label checks pass across EN/FR, including due-date/quote/receipt
+>   labels, payment/notes labels, and no English label leakage in French samples.
 
 ---
 

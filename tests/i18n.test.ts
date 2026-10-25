@@ -29,12 +29,38 @@ describe('t() (chunk 5.1)', () => {
     expect(t('pdf.column.quantity', 'en')).toBe('QTY');
     expect(t('pdf.column.unitPrice', 'fr')).toBe('PRIX UNITAIRE');
     expect(t('pdf.column.unitPrice', 'en')).toBe('UNIT PRICE');
+    expect(t('pdf.from', 'fr')).toBe('ÉMETTEUR');
+    expect(t('pdf.from', 'en')).toBe('FROM');
+    expect(t('pdf.dueDate', 'fr')).toBe("DATE D'ÉCHÉANCE");
+    expect(t('pdf.dueDate', 'en')).toBe('DUE DATE');
     expect(t('pdf.subtotal', 'fr')).toBe('SOUS-TOTAL');
     expect(t('pdf.subtotal', 'en')).toBe('SUBTOTAL');
     expect(t('pdf.payment', 'fr')).toBe('MODE DE PAIEMENT');
     expect(t('pdf.payment', 'en')).toBe('PAYMENT METHOD');
     expect(t('pdf.notes', 'fr')).toBe('NOTES');
     expect(t('pdf.notes', 'en')).toBe('NOTES');
+  });
+
+  it('keeps the fixed PDF labels and date wording', () => {
+    expect(t('pdf.invoice.idLabel', 'en')).toBe('INVOICE #');
+    expect(t('pdf.quote.idLabel', 'en')).toBe('QUOTE #');
+    expect(t('pdf.receipt.idLabel', 'en')).toBe('RECEIPT #');
+    expect(t('pdf.date.invoice', 'en')).toBe('DATE');
+    expect(t('pdf.date.invoice', 'fr')).toBe('DATE');
+    expect(t('pdf.date.quote', 'en')).toBe('VALID UNTIL');
+    expect(t('pdf.date.receipt', 'en')).toBe('PAID ON');
+    expect(t('pdf.tax', 'en')).toBe('Tax');
+    expect(t('pdf.total', 'en')).toBe('TOTAL');
+  });
+
+  it('uses the reviewed French PDF labels', () => {
+    expect(t('pdf.from', 'fr')).toBe('ÉMETTEUR');
+    expect(t('pdf.date.invoice', 'fr')).toBe('DATE');
+    expect(t('pdf.dueDate', 'fr')).toBe("DATE D'ÉCHÉANCE");
+    expect(t('pdf.subtotal', 'fr')).toBe('SOUS-TOTAL');
+    expect(t('pdf.column.unitPrice', 'fr')).toBe('PRIX UNITAIRE');
+    expect(t('pdf.payment', 'fr')).toBe('MODE DE PAIEMENT');
+    expect(t('pdf.notes', 'fr')).toBe('NOTES');
   });
 
   it('replaces {placeholder} params (page numbers)', () => {

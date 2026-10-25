@@ -84,11 +84,16 @@ describe('POST /pdf/invoice-generate — happy path', () => {
     expect(text).toContain('Acme');
     expect(text).toContain('Bob');
     expect(text).toContain('Widget');
+    expect(text).toContain('FROM');
+    expect(text).toContain('BILL TO');
+    expect(text).toContain('DUE DATE:');
+    expect(text).toContain('SUBTOTAL');
     expect(text).toContain('PAYMENT METHOD');
     expect(text).toContain('Bank Transfer');
     expect(text).toContain('NOTES');
     expect(text).toContain('Thank you!');
     expect(text).toContain('Acme · 123 · a@b.com');
+    expect(text).toContain('Page 1 of 1');
     expect(text).not.toContain('[Acme');
   });
 
@@ -605,27 +610,48 @@ describe('POST /pdf/invoice-generate — French validation errors (chunk 5.4)', 
 
 describe('POST /pdf/invoice-generate — French PDF (chunk 5.2)', () => {
   it('renders the whole invoice in French when language=fr', async () => {
-    const res = await postInvoice({ ...validPayload, language: 'fr' });
+    const res = await postInvoice({
+      ...validPayload,
+      dueDate: '2026-02-15',
+      paymentType: 'Virement bancaire',
+      notes: 'Merci de votre confiance.',
+      language: 'fr',
+    });
     expect(res.status).toBe(200);
 
     const text = extractPdfText(res.body);
     expect(text).toContain('FACTURE'); // title
     expect(text).toContain('FACTURE #'); // document number label
+    expect(text).toContain('ÉMETTEUR');
     expect(text).toContain('FACTURER À');
+    expect(text).toContain("DATE D'ÉCHÉANCE");
     expect(text).toContain('QTÉ');
     expect(text).toContain('PRIX UNITAIRE');
     expect(text).toContain('MONTANT');
+    expect(text).toContain('SOUS-TOTAL');
     expect(text).toContain('Taxe (10%)');
+    expect(text).toContain('MODE DE PAIEMENT');
+    expect(text).toContain('Virement bancaire');
+    expect(text).toContain('NOTES');
+    expect(text).toContain('Merci de votre confiance.');
     expect(text).toContain('Merci pour votre affaire !');
     expect(text).toContain('Si vous avez des questions'); // contact note
     expect(text).toContain('Page 1 sur 1');
     expect(text).toContain('1 janvier 2026'); // fr-FR long date
+    expect(text).toContain('15 février 2026'); // due date in French
 
     // English counterparts must not leak through
+    expect(text).not.toContain('FROM');
+    expect(text).not.toContain('INVOICE #');
     expect(text).not.toContain('BILL TO');
     expect(text).not.toContain('QTY');
     expect(text).not.toContain('UNIT PRICE');
+    expect(text).not.toContain('AMOUNT');
+    expect(text).not.toContain('DUE DATE');
+    expect(text).not.toContain('SUBTOTAL');
+    expect(text).not.toContain('PAYMENT METHOD');
     expect(text).not.toContain('Thank you for your business');
+    expect(text).not.toContain('Page 1 of');
   });
 
   it('renders a French RECEIPT and QUOTE with translated labels', async () => {
