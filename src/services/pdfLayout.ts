@@ -54,8 +54,13 @@ export const LAYOUT = {
 
 import type { TranslationKey } from '../locales/en';
 
+/** The three date/presentation families the PDF knows about. */
+export type DocumentKind = 'invoice' | 'quote' | 'receipt';
+
 /** How a document type is presented in the PDF header. */
 export interface DocumentTypeStyle {
+  /** Presentation family used by the invoice model to pick date roles. */
+  kind: DocumentKind;
   /** Translation key of the big title in the top-right corner. */
   titleKey: TranslationKey;
   /** Accent color for the title and the underline rule. */
@@ -64,7 +69,7 @@ export interface DocumentTypeStyle {
   idKey: TranslationKey;
   /** Translation key of the label in front of the primary date. */
   dateKey: TranslationKey;
-  /** Payload field holding the primary date value. */
+  /** Payload field holding the primary date value (kept for compatibility). */
   dateField: 'issueDate' | 'dueDate';
 }
 
@@ -76,6 +81,7 @@ export interface DocumentTypeStyle {
  */
 export const DOCUMENT_TYPES: Record<string, DocumentTypeStyle> = {
   'SERVICE INVOICE': {
+    kind: 'invoice',
     titleKey: 'pdf.invoice.title',
     accent: '#2563eb',
     idKey: 'pdf.invoice.idLabel',
@@ -83,6 +89,7 @@ export const DOCUMENT_TYPES: Record<string, DocumentTypeStyle> = {
     dateField: 'issueDate',
   },
   'PRODUCT INVOICE': {
+    kind: 'invoice',
     titleKey: 'pdf.invoice.title',
     accent: '#2563eb',
     idKey: 'pdf.invoice.idLabel',
@@ -90,6 +97,7 @@ export const DOCUMENT_TYPES: Record<string, DocumentTypeStyle> = {
     dateField: 'issueDate',
   },
   QUOTE: {
+    kind: 'quote',
     titleKey: 'pdf.quote.title',
     accent: '#d97706',
     idKey: 'pdf.quote.idLabel',
@@ -97,6 +105,7 @@ export const DOCUMENT_TYPES: Record<string, DocumentTypeStyle> = {
     dateField: 'dueDate',
   },
   RECEIPT: {
+    kind: 'receipt',
     titleKey: 'pdf.receipt.title',
     accent: '#059669',
     idKey: 'pdf.receipt.idLabel',
